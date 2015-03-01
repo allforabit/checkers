@@ -1,4 +1,5 @@
 var path = require('path');
+console.log(process.env.NODE_ENV);
 // webpack.config.js
 module.exports = {
   entry: './client.jsx',

@@ -2,16 +2,25 @@
   "name": "Checkers",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
+  "config": {
+    "env": "dev"
+  },
   "scripts": {
-    "start": "npm run serve | npm run dev",
+    "start": "npm run serve | npm run $npm_package_config_env",
     "serve": "./node_modules/.bin/http-server -p 8080",
-    "dev": "webpack-dev-server --progress --colors --port 8090"
+    "dev": "webpack-dev-server --progress --colors --port 8090",
+    "prod": "webpack-dev-server --progress --colors --port 8050"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "react": "~0.11.2"
+    "flux": "^2.0.1",
+    "immutable": "^3.6.2",
+    "morearty": "^0.7.9",
+    "object-assign": "^2.0.0",
+    "react": "^0.12.2",
+    "reflux": "^0.2.5"
   },
   "devDependencies": {
     "css-loader": "^0.9.1",
