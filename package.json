@@ -7,10 +7,9 @@
     "env": "dev"
   },
   "scripts": {
-    "start": "npm run serve | npm run $npm_package_config_env",
+    "start": "npm run serve | npm run dev",
     "serve": "./node_modules/.bin/http-server -p 8080",
-    "dev": "webpack-dev-server --progress --colors --port 8090",
-    "prod": "webpack-dev-server --progress --colors --port 8050"
+    "dev": "webpack-dev-server --progress --colors --port 8090"
   },
   "author": "",
   "license": "ISC",
@@ -28,6 +27,7 @@
     "jsx-loader": "~0.11.2",
     "sass-loader": "^0.4.0",
     "style-loader": "^0.8.3",
+    "traceur-loader": "^0.6.3",
     "webpack": "~1.4.4",
     "webpack-dev-server": "~1.6.5"
   }

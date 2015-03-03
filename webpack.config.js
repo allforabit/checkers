@@ -1,5 +1,4 @@
 var path = require('path');
-console.log(process.env.NODE_ENV);
 // webpack.config.js
 module.exports = {
   entry: './client.jsx',
@@ -23,6 +22,10 @@ module.exports = {
             (path.resolve(__dirname, "./bower_components")) + "&" +
           "includePaths[]=" +
             (path.resolve(__dirname, "./node_modules"))
+      },
+      {
+        test: /^(?!.*(bower_components|node_modules))+.+\.js$/,
+        loader: 'traceur'
       }
     ]
   },
