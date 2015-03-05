@@ -9,17 +9,18 @@ var Board = React.createClass({
   },
   componentWillUnmount: function() {
   },
+  handleCompleteTurn: function(){
+    Actions.completeTurn();
+  },
   render: function() {
-
-    console.log('render ---------------');
 
     var binding = this.getDefaultBinding();
 
+    var currentPlayer = binding.get('currentPlayer');
+    var canCompleteTurn = binding.get('canCompleteTurn');
+
     var piecesBinding = binding.sub('pieces');
     var pieces = piecesBinding.get();
-
-    var cellsBinding = binding.sub('cells');
-    var cells = cellsBinding.get();
 
     var cellCount = 8;
 
@@ -29,7 +30,6 @@ var Board = React.createClass({
 
     var xPos = 0;
     var yPos = 0;
-
 
     for (i = 0; i < cellCount; i++) {
       xPos = 0;
@@ -44,6 +44,7 @@ var Board = React.createClass({
       }
 
       for (j = 0; j < cellCount; j++) {
+
         if(color === 'white'){
           color = 'black';
         }else{
@@ -54,15 +55,10 @@ var Board = React.createClass({
 
         var pos = [xPos, yPos];
 
-        var cell = cells
-          .filter(c => c.getIn(['pos', 0]) === xPos && c.getIn(['pos', 1]) === yPos)
-          .first();
-
-        var cellIndex = cellsBinding.get().findIndex(function(c) {
-          return c.getIn(['pos', 0]) === xPos && c.getIn(['pos', 1]) === yPos;
-        });
-
-        var cellBinding = cellsBinding.sub(cellIndex);
+        var cell = {
+          color: color,
+          pos: pos
+        }
 
         var piece = pieces
           .filter(p => p.getIn(['pos', 0]) === xPos && p.getIn(['pos', 1]) === yPos)
@@ -76,9 +72,9 @@ var Board = React.createClass({
 
         if(pieceIndex >= 0){
           var binding = piecesBinding.sub(pieceIndex);
-          boardCells.push(<BoardCell key={key} binding={cellBinding} ><Piece binding={binding} key={key} ></Piece></BoardCell>);
+          boardCells.push(<BoardCell key={key} cell={cell} ><Piece binding={binding} key={key} currentPlayer={currentPlayer}></Piece></BoardCell>);
         }else{
-          boardCells.push(<BoardCell key={key} binding={cellBinding} />);
+          boardCells.push(<BoardCell key={key} cell={cell} />);
         }
 
         xPos++;
@@ -91,17 +87,28 @@ var Board = React.createClass({
 
     }
 
+    console.log(canCompleteTurn);
+
+    if (canCompleteTurn) {
+      console.log('canCompleteTurn');
+      var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
+    }
+    // var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
+
     return (
-      <table onClick={this.handleClick}>
-        {boardRows}
-      </table>
+      <div>
+        <table>
+          {boardRows}
+        </table>
+        <div> Turn - {currentPlayer}</div>
+        {completeTurn}
+      </div>
     );
 
   }
 });
 
 var BoardRow = React.createClass({
-  // mixins: [Morearty.Mixin],
   render: function(){
     return (
       <tr className="board-row">
@@ -112,26 +119,16 @@ var BoardRow = React.createClass({
 });
 
 var BoardCell = React.createClass({
-  // mixins: [Morearty.Mixin],
   handleClick: function(evt) {
-    // var binding = this.getDefaultBinding();
-    // var cell = binding.get();
-    // Actions.updatePosition(cell.get('id'));
+    Actions.updatePosition(this.props.cell);
   },
   render: function(){
-    // var binding = this.getDefaultBinding();
-    // var cell = binding.get();
 
-    // var cx = React.addons.classSet;
-    // var classes = cx({
-    //   'board-cell': true,
-    //   'board-cell-black': cell.get('color') === 'black',
-    //   'board-cell-white': cell.get('color') === 'white'
-    // });
     var cx = React.addons.classSet;
     var classes = cx({
       'board-cell': true,
-      'board-cell-black': true
+      'board-cell-black': this.props.cell.color === 'black',
+      'board-cell-white': this.props.cell.color === 'white'
     });
 
     return (

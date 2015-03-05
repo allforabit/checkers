@@ -5,56 +5,13 @@ var Immutable = require('immutable');
 var Actions = require('./actions');
 
 var COLORS = Object.freeze({RED: 'red', YELLOW: 'yellow'});
+var DIRECTIONS = Object.freeze({NORTH: 1, SOUTH: -1, BOTH: 0});
 
-var generateCells = function(){
-
-  var cellCount = 8;
-  var cells = [];
-  var color = 'white';
-  var xPos = 0;
-  var yPos = 0;
-
-  for (var i = 0; i < cellCount; i++) {
-
-    xPos = 0;
-
-    var boardCells = [];
-
-    //TODO: dry up
-    if(color === 'white'){
-      color = 'black';
-    }else{
-      color = 'white';
-    }
-
-    for (var j = 0; j < cellCount; j++) {
-      if(color === 'white'){
-        color = 'black';
-      }else{
-        color = 'white';
-      }
-
-      var pos = [xPos, yPos];
-      var cell = {
-        pos: pos,
-        color: color,
-        id: xPos + '-' + yPos
-      }
-
-      cells.push(cell);
-      xPos++;
-
-    }
-
-    yPos++;
-
-  }
-
-  return cells;
-}
 
 var state = {
-  playerTurn: COLORS.RED,
+  currentPlayer: COLORS.RED,
+  canCompleteTurn: false,
+  mustCompleteTurn: false,
   pieces: [
     {id: 1, selected: true, color: 'red', pos: [1,0]}, {id:2, color: 'red', pos: [3,0]}, {id:3, color: 'red', pos: [5,0]}, {id: 4, color: 'red', pos: [7,0]},
     {id: 6, color: 'red', pos: [0,1]}, {id: 7, color: 'red', pos: [2,1]}, {id: 8, color: 'red', pos: [4,1]}, {id: 9, color: 'red', pos: [6,1]},
@@ -62,8 +19,7 @@ var state = {
     {id: 16, color: 'yellow', pos: [0,5]}, {id: 17, color: 'yellow', pos: [2,5]}, {id: 18, color: 'yellow', pos: [4,5]}, {id: 19, color: 'yellow', pos: [6,5]},
     {id: 21, color: 'yellow', pos: [1,6]}, {id: 22, color: 'yellow', pos: [3,6]}, {id: 23, color: 'yellow', pos: [5,6]}, {id: 24, color: 'yellow', pos: [7,6]},
     {id: 26, color: 'yellow', pos: [0,7]}, {id: 27, color: 'yellow', pos: [2,7]}, {id: 28, color: 'yellow', pos: [4,7]}, {id: 29, color: 'yellow', pos: [6,7]}
-  ],
-  cells: generateCells()
+  ]
 };
 
 var Ctx = Morearty.createContext({initialState: state});
@@ -79,47 +35,54 @@ var Store = Reflux.createStore({
   init: function() {
     this.rootBinding = this.getMoreartyContext().getBinding();
     this.piecesBinding = this.rootBinding.sub('pieces');
-    this.cellsBinding = this.rootBinding.sub('cells');
   },
-  onUpdatePosition: function(id){
-
-    var cellIndex = this.cellsBinding.get().findIndex(function(cell) {
-      return cell.get('id') === id;
+  findPieceById: function(id){
+    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
+      return piece.get('id') === id
     });
+    return this.piecesBinding.sub(pieceIndex);
+  },
+  //on select event
+  onSelect: function(id){
 
-    var cellBinding = this.cellsBinding.sub(cellIndex);
+    //User must complete turn
+    if(this.rootBinding.get('mustCompleteTurn')){
+      return;
+    }
 
-    var cell = cellBinding.get();
+    var pieceBinding = this.findPieceById(id);
 
-    console.log(cell.toJS());
+    if(pieceBinding.get('color') !== this.rootBinding.get('currentPlayer')){
+      return;
+    }
 
-    if(cell.get('color') === 'white'){
+    this.unSelectAll();
+
+    pieceBinding.set('selected', true);
+
+  },
+  //on updated position event
+  onUpdatePosition: function(cell){
+
+    //Make sure cell is white
+    if(cell.color === 'white'){
+      return;
+    }
+
+    //User must complete turn
+    if(this.rootBinding.get('mustCompleteTurn')){
       return;
     }
 
     var selectedPiece = this.getSelectedPiece();
 
-    if(!selectedPiece){
+    //Make sure it is the correct color's turn
+    if(this.rootBinding.get('currentPlayer') !== selectedPiece.get('color')){
       return;
     }
 
-    //check x coords
-    if(Math.abs(selectedPiece.getIn(['pos', 0]) - cell.getIn(['pos', 0])) !== 1){
+    if(!this.checkLegalMove(cell)){
       return;
-    }
-
-    //check y choords for yellow player
-    if(selectedPiece.get('color') === 'yellow'){
-      if(selectedPiece.getIn(['pos', 1]) - cell.getIn(['pos', 1]) !== 1){
-        return;
-      }
-    }
-
-    //check y choords for red player
-    if(selectedPiece.get('color') === 'red'){
-      if(selectedPiece.getIn(['pos', 1]) - cell.getIn(['pos', 1]) !== -1){
-        return;
-      }
     }
 
     this.unSelectAll();
@@ -130,7 +93,98 @@ var Store = Reflux.createStore({
 
     var pieceBinding = this.piecesBinding.sub(pieceIndex);
 
-    pieceBinding.set('pos', Immutable.List(cell.get('pos')));
+    pieceBinding.set('pos', Immutable.List(cell.pos));
+
+    this.rootBinding.set('canCompleteTurn', true);
+
+    if(!this.checkFurtherMovesAvailable()){
+      this.rootBinding.set('mustCompleteTurn', true);
+    }
+
+    //TODO was it a jump. if so update piece in question
+
+  },
+  checkFurtherMovesAvailable: function(){
+    return false;
+  },
+  //update state on completion of turn
+  onCompleteTurn: function(){
+    if(!this.rootBinding.get('canCompleteTurn')){
+      return;
+    }
+    //switch back canCompleteTurn flag
+    this.rootBinding.set('canCompleteTurn', false);
+    //switch back mustCompleteTurn flag
+    this.rootBinding.set('mustCompleteTurn', false);
+
+    this.switchPlayer();
+
+  },
+  switchPlayer: function(){
+
+    var currentPlayer = this.rootBinding.get('currentPlayer');
+    if(currentPlayer === COLORS.RED){
+      this.rootBinding.set('currentPlayer', COLORS.YELLOW);
+    }else{
+      this.rootBinding.set('currentPlayer', COLORS.RED);
+    }
+
+  },
+  getListLegalMoves: function(pos, direction, legalMovesList, iterations){
+
+    //TODO constrain to board
+    console.log(direction);
+    iterations = iterations || 0;
+    legalMovesList = [] || legalMovesList;
+
+    var coordsList = [[-1, 1*direction], [1, 1*direction]];
+
+    coordsList.forEach(function(coord){
+
+      var cellPos = [coord[0] + pos[0], coord[1] + pos[1]];
+
+      if(this.hasPiece(cellPos)){
+        if(this.hasEnemyPiece(cellPos) & iterations < 2){
+          this.getListLegalMoves(cellPos, direction, legalMovesList, iterations);
+        }
+      }else{
+        legalMovesList.push(cellPos);
+      }
+    }, this);
+
+    iterations++;
+
+    return legalMovesList;
+
+  },
+  hasPiece: function(pos){
+
+    var piece = this.getPieceAtPos(pos);
+
+    if(piece){
+      return true;
+    }else{
+      return false;
+    }
+
+  },
+  hasEnemyPiece: function(pos){
+
+    var piece = this.getPieceAtPos(pos);
+    var currentPlayer = this.rootBinding.get('currentPlayer');
+
+    if(piece && (piece.get('color') !== currentPlayer)){
+      return true;
+    }else{
+      return false;
+    }
+  },
+  getPieceAtPos: function(pos){
+    return this.rootBinding.get('pieces')
+      .filter(p => p.getIn(['pos', 0]) === pos[0] && p.getIn(['pos', 1]) === pos[1])
+      .first();
+  },
+  getNeighbours: function(cell, direction){
 
   },
   checkEnemyNeighbours: function(startCell, endCell, direction){
@@ -138,22 +192,38 @@ var Store = Reflux.createStore({
   },
   checkLegalMove: function(cell){
 
-  },
-  onSelect: function(id){
+    var selectedPiece = this.getSelectedPiece();
 
-    console.log(id);
+    var isLegalMove = true;
 
-    this.unSelectAll();
+    if(!selectedPiece){
+      isLegalMove = false;
+    }
 
-    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
-      return piece.get('id') === id
-    });
+    var listLegalMoves = this.getListLegalMoves(cell.pos, 1);
 
-    var pieceBinding = this.piecesBinding.sub(pieceIndex);
+    console.log(listLegalMoves);
 
-    console.log(pieceBinding.toJS());
+    //check x coords
+    if(Math.abs(selectedPiece.getIn(['pos', 0]) - cell.pos[0]) !== 1){
+      isLegalMove = false;
+    }
 
-    pieceBinding.set('selected', true);
+    //check y choords for yellow player
+    if(selectedPiece.get('color') === 'yellow'){
+      if((selectedPiece.getIn(['pos', 1]) - cell.pos[1]) !== 1){
+        isLegalMove = false;
+      }
+    }
+
+    //check y choords for red player
+    if(selectedPiece.get('color') === 'red'){
+      if((selectedPiece.getIn(['pos', 1]) - cell.pos[1]) !== -1){
+        isLegalMove = false;
+      }
+    }
+
+    return isLegalMove;
 
   },
   getSelectedPiece: function(){

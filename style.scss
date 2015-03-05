@@ -30,8 +30,14 @@
 .piece-yellow{
   background-color: darken(yellow, 5%);
 }
+.piece-yellow--current{
+  background-color: yellow;
+}
 .piece-red{
   background: desaturate(darken(red, 5%), 5%);
+}
+.piece-red--current{
+  background: red;
 }
 .piece-selected{
   outline: #00FF00 dotted thick;
