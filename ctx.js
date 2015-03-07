@@ -5,15 +5,14 @@ var Immutable = require('immutable');
 var Actions = require('./actions');
 
 var COLORS = Object.freeze({RED: 'red', YELLOW: 'yellow'});
-var DIRECTIONS = Object.freeze({NORTH: 1, SOUTH: -1, BOTH: 0});
-
+var DIRECTIONS = Object.freeze({NORTH: -1, SOUTH: 1, BOTH: 0});
 
 var state = {
   currentPlayer: COLORS.RED,
   canCompleteTurn: false,
   mustCompleteTurn: false,
   pieces: [
-    {id: 1, selected: true, color: 'red', pos: [1,0]}, {id:2, color: 'red', pos: [3,0]}, {id:3, color: 'red', pos: [5,0]}, {id: 4, color: 'red', pos: [7,0]},
+    {id: 1, color: 'red', pos: [1,0]}, {id:2, color: 'red', pos: [3,0]}, {id:3, color: 'red', pos: [5,0]}, {id: 4, color: 'red', pos: [7,0]},
     {id: 6, color: 'red', pos: [0,1]}, {id: 7, color: 'red', pos: [2,1]}, {id: 8, color: 'red', pos: [4,1]}, {id: 9, color: 'red', pos: [6,1]},
     {id: 11, color: 'red', pos: [1,2]}, {id: 12, color: 'red', pos: [3,2]}, {id: 13, color: 'red', pos: [5,2]}, {id: 14, color: 'red', pos: [7,2]},
     {id: 16, color: 'yellow', pos: [0,5]}, {id: 17, color: 'yellow', pos: [2,5]}, {id: 18, color: 'yellow', pos: [4,5]}, {id: 19, color: 'yellow', pos: [6,5]},
@@ -50,11 +49,14 @@ var Store = Reflux.createStore({
       return;
     }
 
+
     var pieceBinding = this.findPieceById(id);
 
     if(pieceBinding.get('color') !== this.rootBinding.get('currentPlayer')){
       return;
     }
+
+    console.log(this.getListLegalMoves(pieceBinding.get('pos').toJS(), this.getDirection()));
 
     this.unSelectAll();
 
@@ -75,6 +77,10 @@ var Store = Reflux.createStore({
     }
 
     var selectedPiece = this.getSelectedPiece();
+
+    if(!selectedPiece){
+      return;
+    }
 
     //Make sure it is the correct color's turn
     if(this.rootBinding.get('currentPlayer') !== selectedPiece.get('color')){
@@ -104,6 +110,13 @@ var Store = Reflux.createStore({
     //TODO was it a jump. if so update piece in question
 
   },
+  getDirection: function(){
+    if(this.rootBinding.get('currentPlayer') === COLORS.RED){
+      return DIRECTIONS.SOUTH;
+    }else{
+      return DIRECTIONS.NORTH;
+    }
+  },
   checkFurtherMovesAvailable: function(){
     return false;
   },
@@ -112,6 +125,7 @@ var Store = Reflux.createStore({
     if(!this.rootBinding.get('canCompleteTurn')){
       return;
     }
+
     //switch back canCompleteTurn flag
     this.rootBinding.set('canCompleteTurn', false);
     //switch back mustCompleteTurn flag
@@ -130,31 +144,39 @@ var Store = Reflux.createStore({
     }
 
   },
-  getListLegalMoves: function(pos, direction, legalMovesList, iterations){
+  getListLegalMoves: function(pos, direction, iterations){
 
     //TODO constrain to board
-    console.log(direction);
-    iterations = iterations || 0;
-    legalMovesList = [] || legalMovesList;
+    var relativeCoordsList = [[-1, 1*direction], [1, 1*direction]];
 
-    var coordsList = [[-1, 1*direction], [1, 1*direction]];
-
-    coordsList.forEach(function(coord){
-
-      var cellPos = [coord[0] + pos[0], coord[1] + pos[1]];
-
-      if(this.hasPiece(cellPos)){
-        if(this.hasEnemyPiece(cellPos) & iterations < 2){
-          this.getListLegalMoves(cellPos, direction, legalMovesList, iterations);
+    var legalMoves = relativeCoordsList.map( coord => {
+      return [coord[0] + pos[0], coord[1] + pos[1]];
+    }).map( coord => {
+      if(this.hasPiece(coord)){
+        if(this.hasEnemyPiece(coord)){
+          //neighbour coordinates from enemy piece perspective
+          return relativeCoordsList.map(function(enemyCoord){
+            return [coord[0] + enemyCoord[0], coord[1] + enemyCoord[1]];
+          }).filter(function(enemyCoord){
+            //make sure there's no existing piece and the x axis of destination
+            //cell is not equal to the source position. I.e. can only jump
+            //horizontally. Slightly hackish!
+            return !this.hasPiece(enemyCoord) && (enemyCoord[0] !== pos[0]);
+          }, this);
+        }else{
+          return [];
         }
       }else{
-        legalMovesList.push(cellPos);
+        return [coord];
       }
-    }, this);
+    })
+    .filter(coord => {
+      return coord !== null && coord.length > 0;
+    }).reduce((a, b) => {
+      return a.concat(b);
+    }, []);
 
-    iterations++;
-
-    return legalMovesList;
+    return legalMoves;
 
   },
   hasPiece: function(pos){
@@ -200,27 +222,19 @@ var Store = Reflux.createStore({
       isLegalMove = false;
     }
 
-    var listLegalMoves = this.getListLegalMoves(cell.pos, 1);
+    var currentPos = this.getSelectedPiece().get('pos').toJS();
 
-    console.log(listLegalMoves);
+    var listLegalMoves = this.getListLegalMoves(currentPos, this.getDirection());
 
-    //check x coords
-    if(Math.abs(selectedPiece.getIn(['pos', 0]) - cell.pos[0]) !== 1){
+    var legalMove = listLegalMoves.filter(function(coord){
+      console.log(coord);
+      return coord[0] === cell.pos[0] && coord[1] === cell.pos[1];
+    });
+
+    console.log(legalMove);
+
+    if(legalMove.length < 1){
       isLegalMove = false;
-    }
-
-    //check y choords for yellow player
-    if(selectedPiece.get('color') === 'yellow'){
-      if((selectedPiece.getIn(['pos', 1]) - cell.pos[1]) !== 1){
-        isLegalMove = false;
-      }
-    }
-
-    //check y choords for red player
-    if(selectedPiece.get('color') === 'red'){
-      if((selectedPiece.getIn(['pos', 1]) - cell.pos[1]) !== -1){
-        isLegalMove = false;
-      }
     }
 
     return isLegalMove;
@@ -228,7 +242,6 @@ var Store = Reflux.createStore({
   },
   getSelectedPiece: function(){
     var selectedPiece = this.piecesBinding.get().filter(piece => piece.get('selected') === true).first();
-    console.log(selectedPiece.toJS(), 'sel piece');
     return selectedPiece;
   },
   unSelectAll: function(){
