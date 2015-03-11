@@ -61,11 +61,15 @@ var Board = React.createClass({
         }
 
         var piece = pieces
-          .filter(p => p.getIn(['pos', 0]) === xPos && p.getIn(['pos', 1]) === yPos)
+          .filter(p => p.getIn(['pos', 0]) === xPos
+              && p.getIn(['pos', 1]) === yPos
+              && p.get('captured') !== true)
           .first();
 
         var pieceIndex = piecesBinding.get().findIndex(function(p) {
-          return p.getIn(['pos', 0]) === xPos && p.getIn(['pos', 1]) === yPos;
+          return p.getIn(['pos', 0]) === xPos
+            && p.get('captured') !== true
+            && p.getIn(['pos', 1]) === yPos;
         });
 
         var key = xPos + yPos;
@@ -93,6 +97,15 @@ var Board = React.createClass({
       console.log('canCompleteTurn');
       var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
     }
+
+    var redCapturedEnemyPiecesCount = pieces
+      .filter(piece => piece.get('color') === 'yellow' && piece.get('captured') === true )
+      .count();
+
+    var yellowCapturedEnemyPiecesCount = pieces
+      .filter(piece => piece.get('color') === 'red' && piece.get('captured') === true )
+      .count();
+
     // var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
 
     return (
@@ -102,6 +115,13 @@ var Board = React.createClass({
         </table>
         <div> Turn - {currentPlayer}</div>
         {completeTurn}
+
+        <div>
+          <h3>Captured enemy pieces</h3>
+          <div> Red - {redCapturedEnemyPiecesCount}</div>
+          <div> Yellow - {yellowCapturedEnemyPiecesCount}</div>
+        </div>
+
       </div>
     );
 
@@ -132,7 +152,7 @@ var BoardCell = React.createClass({
     });
 
     return (
-      <td className={classes} onClick={this.handleClick} >{this.props.children}</td>
+      <td className={classes} onClick={this.handleClick} >{this.props.children}{this.props.cell.pos[0]},{this.props.cell.pos[1]}</td>
     );
 
   }

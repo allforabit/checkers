@@ -108,6 +108,31 @@ var Store = Reflux.createStore({
     }
 
     //TODO was it a jump. if so update piece in question
+    var capturedPiece = this.checkIfMoveWasJump(pieceBinding.get('pos'), selectedPiece.get('pos'));
+
+    if(capturedPiece){
+      var capturedPieceIndex = this.piecesBinding.get().findIndex(function(piece) {
+        return piece.get('id') === capturedPiece.get('id');
+      });
+      var capturedPieceBinding = this.piecesBinding.sub(capturedPieceIndex);
+      capturedPieceBinding.set('captured', true);
+      capturedPieceBinding.set('pos', [-1, -1]);
+    }
+
+  },
+  checkIfMoveWasJump(newPos, previousPos){
+
+    console.log(newPos.toJS(), previousPos.toJS());
+
+    if(Math.abs(newPos.get(1) - previousPos.get(1)) > 1){
+      var jumpedPieceXCoords = previousPos.get(0) - ((previousPos.get(0) - newPos.get(0)) / 2);
+      var jumpedPieceYCoords = newPos.get(1) - this.getDirection();
+      var pos = [jumpedPieceXCoords, jumpedPieceYCoords];
+      var capturedPiece = this.getPieceAtPos(pos);
+      return capturedPiece;
+    }
+
+    return false;
 
   },
   getDirection: function(){
