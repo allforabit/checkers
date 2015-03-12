@@ -3,14 +3,46 @@ var Actions = require('./actions');
 
 var Piece = require('./piece');
 
+var React = require('react');
+var $ = require('jquery');
+
+var Game = React.createClass({
+  mixins: [Morearty.Mixin],
+  render: function() {
+    var binding = this.getDefaultBinding();
+    if(binding.get('gameOver')){
+      return (
+        <GameOver binding={binding} />
+      );
+    }else{
+      return (
+        <Board binding={binding} />
+      );
+    }
+  }
+});
+
 var Board = React.createClass({
   mixins: [Morearty.Mixin],
   componentDidMount: function() {
+    $(document.body).on('keydown', this.handleKeyDown);
   },
   componentWillUnmount: function() {
+    $(document.body).off('keydown', this.handleKeyDown);
   },
   handleCompleteTurn: function(){
     Actions.completeTurn();
+  },
+  handleKeyDown: function(e) {
+
+    var SPACEBAR = 13;
+    var ENTER = 32;
+
+    if( e.keyCode === ENTER || e.keyCode === SPACEBAR) {
+      e.preventDefault();
+      Actions.completeTurn();
+    }
+
   },
   render: function() {
 
@@ -91,11 +123,9 @@ var Board = React.createClass({
 
     }
 
-    console.log(canCompleteTurn);
-
     if (canCompleteTurn) {
       console.log('canCompleteTurn');
-      var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
+      var completeTurn = <button className="button mb1 bg-fuchsia" onClick={this.handleCompleteTurn}>Complete turn</button>;
     }
 
     var redCapturedEnemyPiecesCount = pieces
@@ -128,6 +158,28 @@ var Board = React.createClass({
   }
 });
 
+var GameOver = React.createClass({
+  mixins: [Morearty.Mixin],
+  render: function(){
+    var binding = this.getDefaultBinding();
+    var winner = binding.get('winner');
+
+    var cx = React.addons.classSet;
+    var winnerClasses = cx({
+      'red': winner === 'red',
+      'yellow': winner === 'yellow'
+    });
+
+    return (
+      <header className="center px3 py4 white bg-navy bg-cover bg-center">
+        <h1 className="h1 h0-responsive caps mt4 mb0 regular">Game over</h1>
+        <p className="h3 caps">Wnner <span className={winnerClasses}>{winner}</span></p>
+        <a href="#" className="h3 button button-big mb4">Start again</a>
+      </header>
+    );
+  }
+});
+
 var BoardRow = React.createClass({
   render: function(){
     return (
@@ -147,15 +199,21 @@ var BoardCell = React.createClass({
     var cx = React.addons.classSet;
     var classes = cx({
       'board-cell': true,
-      'board-cell-black': this.props.cell.color === 'black',
-      'board-cell-white': this.props.cell.color === 'white'
+      'center': true,
+      'bg-navy': this.props.cell.color === 'black',
+      'bg-darken-1': this.props.cell.color === 'white'
     });
 
+    var coords;
+    // coords = this.props.cell.pos[0] + ',' + this.props.cell.pos[1];
     return (
-      <td className={classes} onClick={this.handleClick} >{this.props.children}{this.props.cell.pos[0]},{this.props.cell.pos[1]}</td>
+      <td className={classes} onClick={this.handleClick} >
+        {this.props.children}
+        {coords}
+      </td>
     );
 
   }
 });
 
-module.exports = Board;
+module.exports = Game;

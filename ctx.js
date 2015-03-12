@@ -49,14 +49,11 @@ var Store = Reflux.createStore({
       return;
     }
 
-
     var pieceBinding = this.findPieceById(id);
 
     if(pieceBinding.get('color') !== this.rootBinding.get('currentPlayer')){
       return;
     }
-
-    console.log(this.getListLegalMoves(pieceBinding.get('pos').toJS(), this.getDirection()));
 
     this.unSelectAll();
 
@@ -107,9 +104,13 @@ var Store = Reflux.createStore({
       this.rootBinding.set('mustCompleteTurn', true);
     }
 
-    //TODO was it a jump. if so update piece in question
-    var capturedPiece = this.checkIfMoveWasJump(pieceBinding.get('pos'), selectedPiece.get('pos'));
+    //Check if piece was kinged
+    if(this.checkPieceKinged(pieceBinding)){
+      pieceBinding.set('king', true);
+    }
 
+    //Check if it was a jump
+    var capturedPiece = this.checkIfMoveWasJump(pieceBinding.get('pos'), selectedPiece.get('pos'));
     if(capturedPiece){
       var capturedPieceIndex = this.piecesBinding.get().findIndex(function(piece) {
         return piece.get('id') === capturedPiece.get('id');
@@ -119,15 +120,49 @@ var Store = Reflux.createStore({
       capturedPieceBinding.set('pos', [-1, -1]);
     }
 
-  },
-  checkIfMoveWasJump(newPos, previousPos){
+    var winner = this.checkForWinner();
 
-    console.log(newPos.toJS(), previousPos.toJS());
+    if(winner){
+      this.rootBinding.set('gameOver', true);
+      this.rootBinding.set('winner', winner);
+    }
+
+  },
+  checkForWinner: function(){
+
+    var yellowPiecesLeft = this.piecesBinding.get()
+        .filter(piece => piece.get('captured') !== true && piece.get('color') === COLORS.YELLOW)
+        .count();
+
+    var redPiecesLeft = this.piecesBinding.get()
+        .filter(piece => piece.get('captured') !== true && piece.get('color') === COLORS.RED)
+        .count();
+
+    if(yellowPiecesLeft === 0){
+      return COLORS.RED;
+    }else if(redPiecesLeft === 0){
+      return COLORS.YELLOW;
+    }else{
+      return null;
+    }
+
+  },
+  checkPieceKinged: function(piece){
+    if(piece.get(['pos', 1]) === 7 && piece.get('color') === COLORS.RED){
+      return true;
+    }else if(piece.get(['pos', 1]) === 0 && piece.get('color') === COLORS.YELLOW){
+      return true;
+    }else{
+      return false;
+    }
+  },
+  checkIfMoveWasJump: function(newPos, previousPos){
 
     if(Math.abs(newPos.get(1) - previousPos.get(1)) > 1){
       var jumpedPieceXCoords = previousPos.get(0) - ((previousPos.get(0) - newPos.get(0)) / 2);
-      var jumpedPieceYCoords = newPos.get(1) - this.getDirection();
+      var jumpedPieceYCoords = previousPos.get(1) - ((previousPos.get(1) - newPos.get(1)) / 2);
       var pos = [jumpedPieceXCoords, jumpedPieceYCoords];
+      console.log(pos);
       var capturedPiece = this.getPieceAtPos(pos);
       return capturedPiece;
     }
@@ -136,6 +171,11 @@ var Store = Reflux.createStore({
 
   },
   getDirection: function(){
+    //TODO this is messy!!
+    var selectedPiece = this.getSelectedPiece();
+    if(selectedPiece.get('king') === true){
+      return DIRECTIONS.BOTH;
+    }
     if(this.rootBinding.get('currentPlayer') === COLORS.RED){
       return DIRECTIONS.SOUTH;
     }else{
@@ -143,6 +183,7 @@ var Store = Reflux.createStore({
     }
   },
   checkFurtherMovesAvailable: function(){
+    //detect double jump
     return false;
   },
   //update state on completion of turn
@@ -171,8 +212,13 @@ var Store = Reflux.createStore({
   },
   getListLegalMoves: function(pos, direction, iterations){
 
+    var relativeCoordsList;
     //TODO constrain to board
-    var relativeCoordsList = [[-1, 1*direction], [1, 1*direction]];
+    if(direction === DIRECTIONS.BOTH){
+      relativeCoordsList = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
+    }else{
+      relativeCoordsList = [[-1, 1*direction], [1, 1*direction]];
+    }
 
     var legalMoves = relativeCoordsList.map( coord => {
       return [coord[0] + pos[0], coord[1] + pos[1]];
