@@ -3,4 +3,4 @@ var app = express();
 
 app.use(express.static(__dirname + '/'));
 
-app.listen(80);
+app.listen(process.env.PORT || 5000);
