@@ -100,7 +100,7 @@ var Store = Reflux.createStore({
 
     this.rootBinding.set('canCompleteTurn', true);
 
-    if(!this.checkFurtherMovesAvailable()){
+    if(!this.checkFurtherMovesAvailable(pieceBinding)){
       this.rootBinding.set('mustCompleteTurn', true);
     }
 
@@ -170,9 +170,9 @@ var Store = Reflux.createStore({
     return false;
 
   },
-  getDirection: function(){
+  getDirection: function(piece){
     //TODO this is messy!!
-    var selectedPiece = this.getSelectedPiece();
+    var selectedPiece = piece || this.getSelectedPiece();
     if(selectedPiece.get('king') === true){
       return DIRECTIONS.BOTH;
     }
@@ -182,9 +182,16 @@ var Store = Reflux.createStore({
       return DIRECTIONS.NORTH;
     }
   },
-  checkFurtherMovesAvailable: function(){
-    //detect double jump
+  checkFurtherMovesAvailable: function(piece){
     return false;
+    //TODO figure out how to do this best
+    var legalMoves = this.getListLegalMoves(piece.get('pos').toJS(), this.getDirection(piece));
+    var legalMovesThatAreJumps = legalMoves.filter(coord => Math.abs(coord[1] - piece.get(['pos', 1])) > 1).length;
+    if(legalMovesThatAreJumps){
+      return true;
+    }else{
+      return false;
+    }
   },
   //update state on completion of turn
   onCompleteTurn: function(){
