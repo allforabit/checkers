@@ -2,13 +2,33 @@ var Reflux = require('reflux');
 var Morearty = require('morearty');
 var Immutable = require('immutable');
 
+var socket = require('socket.io-client')();
+
 var Actions = require('./actions');
 
 var COLORS = Object.freeze({RED: 'red', YELLOW: 'yellow'});
 var DIRECTIONS = Object.freeze({NORTH: -1, SOUTH: 1, BOTH: 0});
 
+socket.on('assign player', function(color){
+  Actions.assignPlayer(color);
+});
+
+socket.on('change turn', function(color){
+  Actions.changeTurn(color);
+});
+
+socket.on('move', function(pieceId, destPos){
+  Actions.move(pieceId, destPos);
+});
+
+Actions.attemptMove.listen(function(pieceId, destPos){
+  console.log(arguments);
+  socket.emit('move attempt', pieceId, destPos);
+});
+
 var state = {
-  currentPlayer: COLORS.RED,
+  me: null,
+  currentPlayer: null,
   canCompleteTurn: false,
   mustCompleteTurn: false,
   pieces: [
@@ -35,6 +55,12 @@ var Store = Reflux.createStore({
     this.rootBinding = this.getMoreartyContext().getBinding();
     this.piecesBinding = this.rootBinding.sub('pieces');
   },
+  onAssignPlayer: function(color){
+    this.rootBinding.set('me', color);
+  },
+  onChangeTurn: function(color){
+    this.rootBinding.set('currentPlayer', color);
+  },
   findPieceById: function(id){
     var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
       return piece.get('id') === id
@@ -60,9 +86,10 @@ var Store = Reflux.createStore({
     pieceBinding.set('selected', true);
 
   },
-  //on updated position event
+  movePosition: function(piece, destPos){
+    console.log(piece);
+  },
   onUpdatePosition: function(cell){
-
     //Make sure cell is white
     if(cell.color === 'white'){
       return;
@@ -78,6 +105,20 @@ var Store = Reflux.createStore({
     if(!selectedPiece){
       return;
     }
+
+    Actions.attemptMove(selectedPiece.get('id'), cell.pos);
+
+  },
+  onMove: function(pieceId, destPos){
+    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
+      return piece.get('id') === pieceId;
+    });
+    var pieceBinding = this.piecesBinding.sub(pieceIndex);
+    pieceBinding.set('pos', Immutable.List(destPos));
+
+  },
+  //on updated position event
+  onUpdatePosition2: function(cell){
 
     //Make sure it is the correct color's turn
     if(this.rootBinding.get('currentPlayer') !== selectedPiece.get('color')){
@@ -283,12 +324,6 @@ var Store = Reflux.createStore({
     return this.rootBinding.get('pieces')
       .filter(p => p.getIn(['pos', 0]) === pos[0] && p.getIn(['pos', 1]) === pos[1])
       .first();
-  },
-  getNeighbours: function(cell, direction){
-
-  },
-  checkEnemyNeighbours: function(startCell, endCell, direction){
-
   },
   checkLegalMove: function(cell){
 
