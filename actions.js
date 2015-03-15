@@ -1,10 +1,14 @@
 var Reflux = require('reflux');
 module.exports = Reflux.createActions([
   'select',
+  'activateCell',
   'updatePosition',
+  'updatePiece',
+  'attemptCompleteTurn',
   'completeTurn',
-  'attemptMove',
   'move',
-  'changeTurn',
-  'assignPlayer'
+  'assignPlayer',
+  'changePlayer',
+  'canCompleteTurn',
+  'mustCompleteTurn'
 ]);

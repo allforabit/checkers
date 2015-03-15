@@ -31,7 +31,7 @@ var Board = React.createClass({
     $(document.body).off('keydown', this.handleKeyDown);
   },
   handleCompleteTurn: function(){
-    Actions.completeTurn();
+    Actions.attemptCompleteTurn();
   },
   handleKeyDown: function(e) {
 
@@ -50,6 +50,7 @@ var Board = React.createClass({
 
     var currentPlayer = binding.get('currentPlayer');
     var canCompleteTurn = binding.get('canCompleteTurn');
+    var pending = binding.get('pending');
 
     var piecesBinding = binding.sub('pieces');
     var pieces = piecesBinding.get();
@@ -138,8 +139,14 @@ var Board = React.createClass({
 
     // var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
 
+    var style;
+
+    if(pending){
+      style = {opacity: '0.4'};
+    }
+
     return (
-      <div>
+      <div style={style}>
         <table>
           {boardRows}
         </table>
@@ -192,7 +199,7 @@ var BoardRow = React.createClass({
 
 var BoardCell = React.createClass({
   handleClick: function(evt) {
-    Actions.updatePosition(this.props.cell);
+    Actions.activateCell(this.props.cell);
   },
   render: function(){
 

@@ -5,11 +5,11 @@ var DIRECTIONS = Object.freeze({NORTH: -1, SOUTH: 1, BOTH: 0});
 
 var checkForWinner = function(pieces){
 
-  var yellowPiecesLeft = pieces.get()
+  var yellowPiecesLeft = pieces
       .filter(function(piece){ return piece.get('captured') !== true && piece.get('color') === COLORS.YELLOW })
       .count();
 
-  var redPiecesLeft = pieces.get()
+  var redPiecesLeft = pieces
       .filter(function(piece){ return piece.get('captured') !== true && piece.get('color') === COLORS.RED })
       .count();
 
@@ -129,7 +129,7 @@ var hasPiece = function(pieces, pos){
 }
 
 var hasEnemyPiece = function(pieces, pos, enemyColor){
-  var piece = getPieceAtPos(pos);
+  var piece = getPieceAtPos(pieces, pos);
   if(piece && (piece.get('color') !== enemyColor)){
     return true;
   }else{

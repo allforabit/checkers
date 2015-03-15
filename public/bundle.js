@@ -47,15 +47,47 @@
 	/** @jsx React.DOM */'use strict'
 	
 	//css
-	__webpack_require__(4);
+	__webpack_require__(5);
 	
-	var Reflux = __webpack_require__(2);
-	
+	// var socket = require('socket.io-client')('http://localhost:5000');
+	var socket = __webpack_require__(2)();
+	var Reflux = __webpack_require__(3);
 	var Game = __webpack_require__(1);
-	
 	var Actions = __webpack_require__(8);
-	
 	var Ctx = __webpack_require__(9);
+	
+	socket.on('assign player', function(color){
+	  Actions.assignPlayer(color);
+	});
+	
+	socket.on('change player', function(color){
+	  Actions.changePlayer(color);
+	  console.log('color: ' + color);
+	});
+	
+	socket.on('move', function(pieceId, destPos){
+	  Actions.move(pieceId, destPos);
+	});
+	
+	socket.on('can complete turn', function(state){
+	  Actions.canCompleteTurn(state);
+	});
+	
+	socket.on('must complete turn', function(state){
+	  Actions.mustCompleteTurn(state);
+	});
+	
+	socket.on('update piece', function(pieceId, piece){
+	  Actions.updatePiece(pieceId, piece);
+	});
+	
+	Actions.updatePosition.listen(function(pieceId, destPos){
+	  socket.emit('move attempt', pieceId, destPos);
+	});
+	
+	Actions.completeTurn.listen(function(){
+	  socket.emit('complete turn');
+	});
 	
 	var Bootstrap = Ctx.bootstrap(Game);
 	
@@ -66,13 +98,13 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/** @jsx React.DOM */var Morearty = __webpack_require__(10);
+	/** @jsx React.DOM */var Morearty = __webpack_require__(11);
 	var Actions = __webpack_require__(8);
 	
-	var Piece = __webpack_require__(6);
+	var Piece = __webpack_require__(7);
 	
-	var React = __webpack_require__(3);
-	var $ = __webpack_require__(13);
+	var React = __webpack_require__(4);
+	var $ = __webpack_require__(18);
 	
 	var Game = React.createClass({displayName: 'Game',
 	  mixins: [Morearty.Mixin],
@@ -99,7 +131,7 @@
 	    $(document.body).off('keydown', this.handleKeyDown);
 	  },
 	  handleCompleteTurn: function(){
-	    Actions.completeTurn();
+	    Actions.attemptCompleteTurn();
 	  },
 	  handleKeyDown: function(e) {
 	
@@ -118,6 +150,7 @@
 	
 	    var currentPlayer = binding.get('currentPlayer');
 	    var canCompleteTurn = binding.get('canCompleteTurn');
+	    var pending = binding.get('pending');
 	
 	    var piecesBinding = binding.sub('pieces');
 	    var pieces = piecesBinding.get();
@@ -206,8 +239,14 @@
 	
 	    // var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
 	
+	    var style;
+	
+	    if(pending){
+	      style = {opacity: '0.4'};
+	    }
+	
 	    return (
-	      React.DOM.div(null, 
+	      React.DOM.div({style: style}, 
 	        React.DOM.table(null, 
 	          boardRows
 	        ), 
@@ -260,7 +299,7 @@
 	
 	var BoardCell = React.createClass({displayName: 'BoardCell',
 	  handleClick: function(evt) {
-	    Actions.updatePosition(this.props.cell);
+	    Actions.activateCell(this.props.cell);
 	  },
 	  render: function(){
 	
@@ -291,26 +330,34 @@
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(11);
+	
+	module.exports = __webpack_require__(12);
 
 
 /***/ },
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = React;
+	module.exports = __webpack_require__(16);
+
 
 /***/ },
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = React;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(5);
+	var content = __webpack_require__(6);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(7)(content, {});
+	var update = __webpack_require__(10)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
@@ -324,17 +371,17 @@
 	}
 
 /***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(12)();
-	exports.push([module.id, ".board {\n  table-layout: fixed; }\n\n.board-cell {\n  overflow: hidden;\n  padding: 10px;\n  width: 50px;\n  height: 70px; }\n\n.board-cell-white {\n  background-color: #bfbfbf;\n  color: #404040; }\n\n.board-cell-black {\n  background-color: #404040;\n  color: #bfbfbf; }\n\n.piece {\n  display: block;\n  width: 50px;\n  height: 50px;\n  -moz-border-radius: 50%;\n  -webkit-border-radius: 50%;\n  border-radius: 50%; }\n\n.piece-yellow {\n  background-color: #e5e600; }\n\n.piece-yellow--current {\n  background-color: yellow; }\n\n.piece-red {\n  background: #e00606; }\n\n.piece-red--current {\n  background: red; }\n\n.piece-selected {\n  outline: #00FF00 dotted thick; }\n", ""]);
-
-/***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/** @jsx React.DOM */var Morearty = __webpack_require__(10);
+	exports = module.exports = __webpack_require__(17)();
+	exports.push([module.id, ".board {\n  table-layout: fixed; }\n\n.board-cell {\n  overflow: hidden;\n  padding: 10px;\n  width: 50px;\n  height: 70px; }\n\n.board-cell-white {\n  background-color: #bfbfbf;\n  color: #404040; }\n\n.board-cell-black {\n  background-color: #404040;\n  color: #bfbfbf; }\n\n.piece {\n  display: block;\n  width: 50px;\n  height: 50px;\n  -moz-border-radius: 50%;\n  -webkit-border-radius: 50%;\n  border-radius: 50%; }\n\n.piece-yellow {\n  background-color: #e5e600; }\n\n.piece-yellow--current {\n  background-color: yellow; }\n\n.piece-red {\n  background: #e00606; }\n\n.piece-red--current {\n  background: red; }\n\n.piece-selected {\n  outline: #00FF00 dotted thick; }\n", ""]);
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/** @jsx React.DOM */var Morearty = __webpack_require__(11);
 	var Actions = __webpack_require__(8);
 	
 	module.exports = React.createClass({displayName: 'exports',
@@ -370,7 +417,124 @@
 
 
 /***/ },
-/* 7 */
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var Reflux = __webpack_require__(3);
+	module.exports = Reflux.createActions(['select', 'activateCell', 'updatePosition', 'updatePiece', 'attemptCompleteTurn', 'completeTurn', 'move', 'assignPlayer', 'changePlayer', 'canCompleteTurn', 'mustCompleteTurn']);
+	
+	//# sourceMappingURL=<compileOutput>
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var Reflux = __webpack_require__(3);
+	var Morearty = __webpack_require__(11);
+	var Immutable = __webpack_require__(37);
+	var Actions = __webpack_require__(8);
+	var engine = __webpack_require__(13);
+	var utils = __webpack_require__(14);
+	var COLORS = Object.freeze({
+	  RED: 'red',
+	  YELLOW: 'yellow'
+	});
+	var DIRECTIONS = Object.freeze({
+	  NORTH: -1,
+	  SOUTH: 1,
+	  BOTH: 0
+	});
+	var state = __webpack_require__(15);
+	var Ctx = Morearty.createContext({initialState: state});
+	Reflux.StoreMethods.getMoreartyContext = function() {
+	  return Ctx;
+	};
+	var Store = Reflux.createStore({
+	  listenables: Actions,
+	  init: function() {
+	    this.rootBinding = this.getMoreartyContext().getBinding();
+	    this.piecesBinding = this.rootBinding.sub('pieces');
+	  },
+	  onNewGame: function() {},
+	  onAssignPlayer: function(color) {
+	    this.rootBinding.set('me', color);
+	  },
+	  onChangePlayer: function(color) {
+	    this.rootBinding.set('currentPlayer', color);
+	  },
+	  onUpdatePiece: function(pieceId, pieceState) {
+	    console.log(arguments);
+	    var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
+	    for (var key in pieceState) {
+	      if (pieceState.hasOwnProperty(key)) {
+	        var valueToSet = Immutable.fromJS(pieceState[key]);
+	        console.log(valueToSet);
+	        pieceBinding.set(key, valueToSet);
+	      }
+	    }
+	  },
+	  onSelect: function(id) {
+	    if (this.rootBinding.get('mustCompleteTurn')) {
+	      return;
+	    }
+	    var pieceBinding = utils.findPieceBindingById(this.piecesBinding, id);
+	    if (pieceBinding.get('color') !== this.rootBinding.get('currentPlayer')) {
+	      return;
+	    }
+	    this.unSelectAll();
+	    pieceBinding.set('selected', true);
+	  },
+	  onActivateCell: function(cell) {
+	    if (cell.color === 'white') {
+	      return;
+	    }
+	    var selectedPiece = this.getSelectedPiece();
+	    if (!selectedPiece) {
+	      return;
+	    }
+	    this.unSelectAll();
+	    Actions.updatePosition(selectedPiece.get('id'), cell.pos);
+	  },
+	  onMove: function(pieceId, destPos) {
+	    var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
+	    pieceBinding.set('pos', Immutable.List(destPos));
+	  },
+	  onAttemptCompleteTurn: function() {
+	    if (!this.rootBinding.get('canCompleteTurn')) {
+	      return;
+	    }
+	    Actions.completeTurn();
+	  },
+	  onCanCompleteTurn: function(state) {
+	    this.rootBinding.set('canCompleteTurn', state);
+	  },
+	  onMustCompleteTurn: function(state) {
+	    this.rootBinding.set('mustCompleteTurn', state);
+	  },
+	  getSelectedPiece: function() {
+	    var selectedPiece = this.piecesBinding.get().filter(function(piece) {
+	      return piece.get('selected') === true;
+	    }).first();
+	    return selectedPiece;
+	  },
+	  unSelectAll: function() {
+	    this.piecesBinding.update(function(pieces) {
+	      return pieces.map(function(piece) {
+	        return piece.set('selected', false);
+	      });
+	    });
+	  }
+	});
+	module.exports = Ctx;
+	
+	//# sourceMappingURL=<compileOutput>
+
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -566,26 +730,111 @@
 
 
 /***/ },
-/* 8 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
-	var Reflux = __webpack_require__(2);
-	module.exports = Reflux.createActions(['select', 'updatePosition', 'completeTurn', 'attemptMove', 'move', 'changeTurn', 'assignPlayer']);
-	
-	//# sourceMappingURL=<compileOutput>
+	module.exports = __webpack_require__(19);
 
 
 /***/ },
-/* 9 */
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * Module dependencies.
+	 */
+	
+	var url = __webpack_require__(20);
+	var parser = __webpack_require__(45);
+	var Manager = __webpack_require__(21);
+	var debug = __webpack_require__(47)('socket.io-client');
+	
+	/**
+	 * Module exports.
+	 */
+	
+	module.exports = exports = lookup;
+	
+	/**
+	 * Managers cache.
+	 */
+	
+	var cache = exports.managers = {};
+	
+	/**
+	 * Looks up an existing `Manager` for multiplexing.
+	 * If the user summons:
+	 *
+	 *   `io('http://localhost/a');`
+	 *   `io('http://localhost/b');`
+	 *
+	 * We reuse the existing instance based on same scheme/port/host,
+	 * and we initialize sockets for each namespace.
+	 *
+	 * @api public
+	 */
+	
+	function lookup(uri, opts) {
+	  if (typeof uri == 'object') {
+	    opts = uri;
+	    uri = undefined;
+	  }
+	
+	  opts = opts || {};
+	
+	  var parsed = url(uri);
+	  var source = parsed.source;
+	  var id = parsed.id;
+	  var io;
+	
+	  if (opts.forceNew || opts['force new connection'] || false === opts.multiplex) {
+	    debug('ignoring socket cache for %s', source);
+	    io = Manager(source, opts);
+	  } else {
+	    if (!cache[id]) {
+	      debug('new io instance for %s', source);
+	      cache[id] = Manager(source, opts);
+	    }
+	    io = cache[id];
+	  }
+	
+	  return io.socket(parsed.path);
+	}
+	
+	/**
+	 * Protocol version.
+	 *
+	 * @api public
+	 */
+	
+	exports.protocol = parser.protocol;
+	
+	/**
+	 * `connect`.
+	 *
+	 * @param {String} uri
+	 * @api public
+	 */
+	
+	exports.connect = lookup;
+	
+	/**
+	 * Expose constructors for standalone build.
+	 *
+	 * @api public
+	 */
+	
+	exports.Manager = __webpack_require__(21);
+	exports.Socket = __webpack_require__(22);
+
+
+/***/ },
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var Reflux = __webpack_require__(2);
-	var Morearty = __webpack_require__(10);
-	var Immutable = __webpack_require__(30);
-	var socket = __webpack_require__(29)();
-	var Actions = __webpack_require__(8);
+	var Immutable = __webpack_require__(37);
 	var COLORS = Object.freeze({
 	  RED: 'red',
 	  YELLOW: 'yellow'
@@ -595,24 +844,167 @@
 	  SOUTH: 1,
 	  BOTH: 0
 	});
-	socket.on('assign player', function(color) {
-	  Actions.assignPlayer(color);
-	});
-	socket.on('change turn', function(color) {
-	  Actions.changeTurn(color);
-	});
-	socket.on('move', function(pieceId, destPos) {
-	  Actions.move(pieceId, destPos);
-	});
-	Actions.attemptMove.listen(function(pieceId, destPos) {
-	  console.log(arguments);
-	  socket.emit('move attempt', pieceId, destPos);
-	});
-	var state = {
+	var checkForWinner = function(pieces) {
+	  var yellowPiecesLeft = pieces.filter(function(piece) {
+	    return piece.get('captured') !== true && piece.get('color') === COLORS.YELLOW;
+	  }).count();
+	  var redPiecesLeft = pieces.filter(function(piece) {
+	    return piece.get('captured') !== true && piece.get('color') === COLORS.RED;
+	  }).count();
+	  if (yellowPiecesLeft === 0) {
+	    return COLORS.RED;
+	  } else if (redPiecesLeft === 0) {
+	    return COLORS.YELLOW;
+	  } else {
+	    return null;
+	  }
+	};
+	var checkPieceKinged = function(piece) {
+	  var kinged = false;
+	  if (piece.get(['pos', 1]) === 7 && piece.get('color') === COLORS.RED) {
+	    kinged = true;
+	  } else if (piece.get(['pos', 1]) === 0 && piece.get('color') === COLORS.YELLOW) {
+	    kinged = true;
+	  }
+	  return kinged;
+	};
+	var checkIfMoveWasJump = function(pieces, newPos, previousPos) {
+	  var capturedPiece;
+	  if (Math.abs(newPos.get(1) - previousPos.get(1)) > 1) {
+	    var jumpedPieceXCoords = previousPos.get(0) - ((previousPos.get(0) - newPos.get(0)) / 2);
+	    var jumpedPieceYCoords = previousPos.get(1) - ((previousPos.get(1) - newPos.get(1)) / 2);
+	    var pos = [jumpedPieceXCoords, jumpedPieceYCoords];
+	    capturedPiece = getPieceAtPos(pieces, pos);
+	  }
+	  return capturedPiece;
+	};
+	var getDirection = function(piece) {
+	  if (piece.get('king') === true) {
+	    return DIRECTIONS.BOTH;
+	  }
+	  if (piece.get('color') === COLORS.RED) {
+	    return DIRECTIONS.SOUTH;
+	  } else {
+	    return DIRECTIONS.NORTH;
+	  }
+	};
+	var checkFurtherMovesAvailable = function(pieces, piece) {
+	  return false;
+	  var legalMoves = getListLegalMoves(piece.get('pos').toJS(), getDirection(piece));
+	  var legalMovesThatAreJumps = legalMoves.filter(function(coord) {
+	    return Math.abs(coord[1] - piece.get(['pos', 1])) > 1;
+	  }).length;
+	  if (legalMovesThatAreJumps) {
+	    return true;
+	  } else {
+	    return false;
+	  }
+	};
+	var getListLegalMoves = function(pieces, pos, direction, iterations) {
+	  var relativeCoordsList;
+	  if (direction === DIRECTIONS.BOTH) {
+	    relativeCoordsList = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
+	  } else {
+	    relativeCoordsList = [[-1, 1 * direction], [1, 1 * direction]];
+	  }
+	  var legalMoves = relativeCoordsList.map(function(coord) {
+	    return [coord[0] + pos[0], coord[1] + pos[1]];
+	  }).map(function(coord) {
+	    if (hasPiece(pieces, coord)) {
+	      if (hasEnemyPiece(pieces, coord)) {
+	        return relativeCoordsList.map(function(enemyCoord) {
+	          return [coord[0] + enemyCoord[0], coord[1] + enemyCoord[1]];
+	        }).filter(function(enemyCoord) {
+	          return !hasPiece(pieces, enemyCoord) && (enemyCoord[0] !== pos[0]);
+	        });
+	      } else {
+	        return [];
+	      }
+	    } else {
+	      return [coord];
+	    }
+	  }).filter(function(coord) {
+	    return coord !== null && coord.length > 0;
+	  }).reduce(function(a, b) {
+	    return a.concat(b);
+	  }, []);
+	  return legalMoves;
+	};
+	var hasPiece = function(pieces, pos) {
+	  var piece = getPieceAtPos(pieces, pos);
+	  if (piece) {
+	    return true;
+	  } else {
+	    return false;
+	  }
+	};
+	var hasEnemyPiece = function(pieces, pos, enemyColor) {
+	  var piece = getPieceAtPos(pieces, pos);
+	  if (piece && (piece.get('color') !== enemyColor)) {
+	    return true;
+	  } else {
+	    return false;
+	  }
+	};
+	var getPieceAtPos = function(pieces, pos) {
+	  return pieces.filter(function(p) {
+	    return p.getIn(['pos', 0]) === pos[0] && p.getIn(['pos', 1]) === pos[1];
+	  }).first();
+	};
+	var checkLegalMove = function(pieces, selectedPiece, destPos) {
+	  var isLegalMove = true;
+	  var currentPos = selectedPiece.get('pos').toJS();
+	  var listLegalMoves = getListLegalMoves(pieces, currentPos, getDirection(selectedPiece));
+	  var legalMove = listLegalMoves.filter(function(coord) {
+	    return coord[0] === destPos[0] && coord[1] === destPos[1];
+	  });
+	  if (legalMove.length < 1) {
+	    isLegalMove = false;
+	  }
+	  return isLegalMove;
+	};
+	module.exports = {
+	  checkForWinner: checkForWinner,
+	  checkPieceKinged: checkPieceKinged,
+	  checkIfMoveWasJump: checkIfMoveWasJump,
+	  getDirection: getDirection,
+	  checkFurtherMovesAvailable: checkFurtherMovesAvailable,
+	  getListLegalMoves: getListLegalMoves,
+	  hasPiece: hasPiece,
+	  hasEnemyPiece: hasEnemyPiece,
+	  checkLegalMove: checkLegalMove
+	};
+	
+	//# sourceMappingURL=<compileOutput>
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var findPieceBindingById = function(piecesBinding, id) {
+	  var pieceIndex = piecesBinding.get().findIndex(function(piece) {
+	    return piece.get('id') === id;
+	  });
+	  return piecesBinding.sub(pieceIndex);
+	};
+	module.exports = {findPieceBindingById: findPieceBindingById};
+	
+	//# sourceMappingURL=<compileOutput>
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	module.exports = {
 	  me: null,
-	  currentPlayer: null,
+	  currentPlayer: 'red',
 	  canCompleteTurn: false,
 	  mustCompleteTurn: false,
+	  pending: false,
 	  pieces: [{
 	    id: 1,
 	    color: 'red',
@@ -711,296 +1103,38 @@
 	    pos: [6, 7]
 	  }]
 	};
-	var Ctx = Morearty.createContext({initialState: state});
-	Reflux.StoreMethods.getMoreartyContext = function() {
-	  return Ctx;
-	};
-	var Store = Reflux.createStore({
-	  listenables: Actions,
-	  init: function() {
-	    this.rootBinding = this.getMoreartyContext().getBinding();
-	    this.piecesBinding = this.rootBinding.sub('pieces');
-	  },
-	  onAssignPlayer: function(color) {
-	    this.rootBinding.set('me', color);
-	  },
-	  onChangeTurn: function(color) {
-	    this.rootBinding.set('currentPlayer', color);
-	  },
-	  findPieceById: function(id) {
-	    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
-	      return piece.get('id') === id;
-	    });
-	    return this.piecesBinding.sub(pieceIndex);
-	  },
-	  onSelect: function(id) {
-	    if (this.rootBinding.get('mustCompleteTurn')) {
-	      return;
-	    }
-	    var pieceBinding = this.findPieceById(id);
-	    if (pieceBinding.get('color') !== this.rootBinding.get('currentPlayer')) {
-	      return;
-	    }
-	    this.unSelectAll();
-	    pieceBinding.set('selected', true);
-	  },
-	  movePosition: function(piece, destPos) {
-	    console.log(piece);
-	  },
-	  onUpdatePosition: function(cell) {
-	    if (cell.color === 'white') {
-	      return;
-	    }
-	    if (this.rootBinding.get('mustCompleteTurn')) {
-	      return;
-	    }
-	    var selectedPiece = this.getSelectedPiece();
-	    if (!selectedPiece) {
-	      return;
-	    }
-	    Actions.attemptMove(selectedPiece.get('id'), cell.pos);
-	  },
-	  onMove: function(pieceId, destPos) {
-	    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
-	      return piece.get('id') === pieceId;
-	    });
-	    var pieceBinding = this.piecesBinding.sub(pieceIndex);
-	    pieceBinding.set('pos', Immutable.List(destPos));
-	  },
-	  onUpdatePosition2: function(cell) {
-	    if (this.rootBinding.get('currentPlayer') !== selectedPiece.get('color')) {
-	      return;
-	    }
-	    if (!this.checkLegalMove(cell)) {
-	      return;
-	    }
-	    this.unSelectAll();
-	    var pieceIndex = this.piecesBinding.get().findIndex(function(piece) {
-	      return piece.get('id') === selectedPiece.get('id');
-	    });
-	    var pieceBinding = this.piecesBinding.sub(pieceIndex);
-	    pieceBinding.set('pos', Immutable.List(cell.pos));
-	    this.rootBinding.set('canCompleteTurn', true);
-	    if (!this.checkFurtherMovesAvailable(pieceBinding)) {
-	      this.rootBinding.set('mustCompleteTurn', true);
-	    }
-	    if (this.checkPieceKinged(pieceBinding)) {
-	      pieceBinding.set('king', true);
-	    }
-	    var capturedPiece = this.checkIfMoveWasJump(pieceBinding.get('pos'), selectedPiece.get('pos'));
-	    if (capturedPiece) {
-	      var capturedPieceIndex = this.piecesBinding.get().findIndex(function(piece) {
-	        return piece.get('id') === capturedPiece.get('id');
-	      });
-	      var capturedPieceBinding = this.piecesBinding.sub(capturedPieceIndex);
-	      capturedPieceBinding.set('captured', true);
-	      capturedPieceBinding.set('pos', [-1, -1]);
-	    }
-	    var winner = this.checkForWinner();
-	    if (winner) {
-	      this.rootBinding.set('gameOver', true);
-	      this.rootBinding.set('winner', winner);
-	    }
-	  },
-	  checkForWinner: function() {
-	    var yellowPiecesLeft = this.piecesBinding.get().filter((function(piece) {
-	      return piece.get('captured') !== true && piece.get('color') === COLORS.YELLOW;
-	    })).count();
-	    var redPiecesLeft = this.piecesBinding.get().filter((function(piece) {
-	      return piece.get('captured') !== true && piece.get('color') === COLORS.RED;
-	    })).count();
-	    if (yellowPiecesLeft === 0) {
-	      return COLORS.RED;
-	    } else if (redPiecesLeft === 0) {
-	      return COLORS.YELLOW;
-	    } else {
-	      return null;
-	    }
-	  },
-	  checkPieceKinged: function(piece) {
-	    if (piece.get(['pos', 1]) === 7 && piece.get('color') === COLORS.RED) {
-	      return true;
-	    } else if (piece.get(['pos', 1]) === 0 && piece.get('color') === COLORS.YELLOW) {
-	      return true;
-	    } else {
-	      return false;
-	    }
-	  },
-	  checkIfMoveWasJump: function(newPos, previousPos) {
-	    if (Math.abs(newPos.get(1) - previousPos.get(1)) > 1) {
-	      var jumpedPieceXCoords = previousPos.get(0) - ((previousPos.get(0) - newPos.get(0)) / 2);
-	      var jumpedPieceYCoords = previousPos.get(1) - ((previousPos.get(1) - newPos.get(1)) / 2);
-	      var pos = [jumpedPieceXCoords, jumpedPieceYCoords];
-	      console.log(pos);
-	      var capturedPiece = this.getPieceAtPos(pos);
-	      return capturedPiece;
-	    }
-	    return false;
-	  },
-	  getDirection: function(piece) {
-	    var selectedPiece = piece || this.getSelectedPiece();
-	    if (selectedPiece.get('king') === true) {
-	      return DIRECTIONS.BOTH;
-	    }
-	    if (this.rootBinding.get('currentPlayer') === COLORS.RED) {
-	      return DIRECTIONS.SOUTH;
-	    } else {
-	      return DIRECTIONS.NORTH;
-	    }
-	  },
-	  checkFurtherMovesAvailable: function(piece) {
-	    return false;
-	    var legalMoves = this.getListLegalMoves(piece.get('pos').toJS(), this.getDirection(piece));
-	    var legalMovesThatAreJumps = legalMoves.filter((function(coord) {
-	      return Math.abs(coord[1] - piece.get(['pos', 1])) > 1;
-	    })).length;
-	    if (legalMovesThatAreJumps) {
-	      return true;
-	    } else {
-	      return false;
-	    }
-	  },
-	  onCompleteTurn: function() {
-	    if (!this.rootBinding.get('canCompleteTurn')) {
-	      return;
-	    }
-	    this.rootBinding.set('canCompleteTurn', false);
-	    this.rootBinding.set('mustCompleteTurn', false);
-	    this.switchPlayer();
-	  },
-	  switchPlayer: function() {
-	    var currentPlayer = this.rootBinding.get('currentPlayer');
-	    if (currentPlayer === COLORS.RED) {
-	      this.rootBinding.set('currentPlayer', COLORS.YELLOW);
-	    } else {
-	      this.rootBinding.set('currentPlayer', COLORS.RED);
-	    }
-	  },
-	  getListLegalMoves: function(pos, direction, iterations) {
-	    var $__0 = this;
-	    var relativeCoordsList;
-	    if (direction === DIRECTIONS.BOTH) {
-	      relativeCoordsList = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
-	    } else {
-	      relativeCoordsList = [[-1, 1 * direction], [1, 1 * direction]];
-	    }
-	    var legalMoves = relativeCoordsList.map((function(coord) {
-	      return [coord[0] + pos[0], coord[1] + pos[1]];
-	    })).map((function(coord) {
-	      if ($__0.hasPiece(coord)) {
-	        if ($__0.hasEnemyPiece(coord)) {
-	          return relativeCoordsList.map(function(enemyCoord) {
-	            return [coord[0] + enemyCoord[0], coord[1] + enemyCoord[1]];
-	          }).filter(function(enemyCoord) {
-	            return !this.hasPiece(enemyCoord) && (enemyCoord[0] !== pos[0]);
-	          }, $__0);
-	        } else {
-	          return [];
-	        }
-	      } else {
-	        return [coord];
-	      }
-	    })).filter((function(coord) {
-	      return coord !== null && coord.length > 0;
-	    })).reduce((function(a, b) {
-	      return a.concat(b);
-	    }), []);
-	    return legalMoves;
-	  },
-	  hasPiece: function(pos) {
-	    var piece = this.getPieceAtPos(pos);
-	    if (piece) {
-	      return true;
-	    } else {
-	      return false;
-	    }
-	  },
-	  hasEnemyPiece: function(pos) {
-	    var piece = this.getPieceAtPos(pos);
-	    var currentPlayer = this.rootBinding.get('currentPlayer');
-	    if (piece && (piece.get('color') !== currentPlayer)) {
-	      return true;
-	    } else {
-	      return false;
-	    }
-	  },
-	  getPieceAtPos: function(pos) {
-	    return this.rootBinding.get('pieces').filter((function(p) {
-	      return p.getIn(['pos', 0]) === pos[0] && p.getIn(['pos', 1]) === pos[1];
-	    })).first();
-	  },
-	  checkLegalMove: function(cell) {
-	    var selectedPiece = this.getSelectedPiece();
-	    var isLegalMove = true;
-	    if (!selectedPiece) {
-	      isLegalMove = false;
-	    }
-	    var currentPos = this.getSelectedPiece().get('pos').toJS();
-	    var listLegalMoves = this.getListLegalMoves(currentPos, this.getDirection());
-	    var legalMove = listLegalMoves.filter(function(coord) {
-	      console.log(coord);
-	      return coord[0] === cell.pos[0] && coord[1] === cell.pos[1];
-	    });
-	    console.log(legalMove);
-	    if (legalMove.length < 1) {
-	      isLegalMove = false;
-	    }
-	    return isLegalMove;
-	  },
-	  getSelectedPiece: function() {
-	    var selectedPiece = this.piecesBinding.get().filter((function(piece) {
-	      return piece.get('selected') === true;
-	    })).first();
-	    return selectedPiece;
-	  },
-	  unSelectAll: function() {
-	    this.piecesBinding.update(function(pieces) {
-	      return pieces.map(function(piece) {
-	        return piece.set('selected', false);
-	      });
-	    });
-	  }
-	});
-	module.exports = Ctx;
 	
 	//# sourceMappingURL=<compileOutput>
 
 
 /***/ },
-/* 10 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(14);
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports.ActionMethods = __webpack_require__(15);
+	exports.ActionMethods = __webpack_require__(23);
 	
-	exports.ListenerMethods = __webpack_require__(16);
+	exports.ListenerMethods = __webpack_require__(24);
 	
-	exports.PublisherMethods = __webpack_require__(17);
+	exports.PublisherMethods = __webpack_require__(25);
 	
-	exports.StoreMethods = __webpack_require__(18);
+	exports.StoreMethods = __webpack_require__(26);
 	
-	exports.createAction = __webpack_require__(19);
+	exports.createAction = __webpack_require__(27);
 	
-	exports.createStore = __webpack_require__(20);
+	exports.createStore = __webpack_require__(28);
 	
-	exports.connect = __webpack_require__(21);
+	exports.connect = __webpack_require__(29);
 	
-	exports.connectFilter = __webpack_require__(22);
+	exports.connectFilter = __webpack_require__(30);
 	
-	exports.ListenerMixin = __webpack_require__(23);
+	exports.ListenerMixin = __webpack_require__(31);
 	
-	exports.listenTo = __webpack_require__(24);
+	exports.listenTo = __webpack_require__(32);
 	
-	exports.listenToMany = __webpack_require__(25);
+	exports.listenToMany = __webpack_require__(33);
 	
 	
-	var maker = __webpack_require__(26).staticJoinCreator;
+	var maker = __webpack_require__(34).staticJoinCreator;
 	
 	exports.joinTrailing = exports.all = maker("last"); // Reflux.all alias for backward compatibility
 	
@@ -1010,7 +1144,7 @@
 	
 	exports.joinConcat = maker("all");
 	
-	var _ = __webpack_require__(27);
+	var _ = __webpack_require__(35);
 	
 	/**
 	 * Convenience function for creating a set of actions
@@ -1033,7 +1167,7 @@
 	 * Sets the eventmitter that Reflux uses
 	 */
 	exports.setEventEmitter = function(ctx) {
-	    var _ = __webpack_require__(27);
+	    var _ = __webpack_require__(35);
 	    _.EventEmitter = ctx;
 	};
 	
@@ -1042,7 +1176,7 @@
 	 * Sets the Promise library that Reflux uses
 	 */
 	exports.setPromise = function(ctx) {
-	    var _ = __webpack_require__(27);
+	    var _ = __webpack_require__(35);
 	    _.Promise = ctx;
 	};
 	
@@ -1051,7 +1185,7 @@
 	 * @param {Function} factory has the signature `function(resolver) { return [new Promise]; }`
 	 */
 	exports.setPromiseFactory = function(factory) {
-	    var _ = __webpack_require__(27);
+	    var _ = __webpack_require__(35);
 	    _.createPromise = factory;
 	};
 	
@@ -1060,14 +1194,14 @@
 	 * Sets the method used for deferring actions and stores
 	 */
 	exports.nextTick = function(nextTick) {
-	    var _ = __webpack_require__(27);
+	    var _ = __webpack_require__(35);
 	    _.nextTick = nextTick;
 	};
 	
 	/**
 	 * Provides the set of created actions and stores for introspection
 	 */
-	exports.__keep = __webpack_require__(28);
+	exports.__keep = __webpack_require__(36);
 	
 	/**
 	 * Warn if Function.prototype.bind not available
@@ -1082,7 +1216,7 @@
 
 
 /***/ },
-/* 12 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function() {
@@ -1103,7 +1237,7 @@
 	}
 
 /***/ },
-/* 13 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -10314,7 +10448,7 @@
 
 
 /***/ },
-/* 14 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -10322,13 +10456,13 @@
 	 * @namespace
 	 * @classdesc Morearty main module. Exposes [createContext]{@link Morearty.createContext} function.
 	 */
-	var Imm      = __webpack_require__(30);
-	var React    = __webpack_require__(3);
-	var Util     = __webpack_require__(31);
-	var Binding  = __webpack_require__(32);
-	var History  = __webpack_require__(33);
-	var Callback = __webpack_require__(37);
-	var DOM      = __webpack_require__(34);
+	var Imm      = __webpack_require__(37);
+	var React    = __webpack_require__(4);
+	var Util     = __webpack_require__(38);
+	var Binding  = __webpack_require__(39);
+	var History  = __webpack_require__(40);
+	var Callback = __webpack_require__(46);
+	var DOM      = __webpack_require__(41);
 	
 	var MERGE_STRATEGY = Object.freeze({
 	  OVERWRITE: 'overwrite',
@@ -10960,7 +11094,987 @@
 
 
 /***/ },
-/* 15 */
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {
+	/**
+	 * Module dependencies.
+	 */
+	
+	var parseuri = __webpack_require__(48);
+	var debug = __webpack_require__(47)('socket.io-client:url');
+	
+	/**
+	 * Module exports.
+	 */
+	
+	module.exports = url;
+	
+	/**
+	 * URL parser.
+	 *
+	 * @param {String} url
+	 * @param {Object} An object meant to mimic window.location.
+	 *                 Defaults to window.location.
+	 * @api public
+	 */
+	
+	function url(uri, loc){
+	  var obj = uri;
+	
+	  // default to window.location
+	  var loc = loc || global.location;
+	  if (null == uri) uri = loc.protocol + '//' + loc.host;
+	
+	  // relative path support
+	  if ('string' == typeof uri) {
+	    if ('/' == uri.charAt(0)) {
+	      if ('/' == uri.charAt(1)) {
+	        uri = loc.protocol + uri;
+	      } else {
+	        uri = loc.hostname + uri;
+	      }
+	    }
+	
+	    if (!/^(https?|wss?):\/\//.test(uri)) {
+	      debug('protocol-less url %s', uri);
+	      if ('undefined' != typeof loc) {
+	        uri = loc.protocol + '//' + uri;
+	      } else {
+	        uri = 'https://' + uri;
+	      }
+	    }
+	
+	    // parse
+	    debug('parse %s', uri);
+	    obj = parseuri(uri);
+	  }
+	
+	  // make sure we treat `localhost:80` and `localhost` equally
+	  if (!obj.port) {
+	    if (/^(http|ws)$/.test(obj.protocol)) {
+	      obj.port = '80';
+	    }
+	    else if (/^(http|ws)s$/.test(obj.protocol)) {
+	      obj.port = '443';
+	    }
+	  }
+	
+	  obj.path = obj.path || '/';
+	
+	  // define unique id
+	  obj.id = obj.protocol + '://' + obj.host + ':' + obj.port;
+	  // define href
+	  obj.href = obj.protocol + '://' + obj.host + (loc && loc.port == obj.port ? '' : (':' + obj.port));
+	
+	  return obj;
+	}
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * Module dependencies.
+	 */
+	
+	var url = __webpack_require__(20);
+	var eio = __webpack_require__(49);
+	var Socket = __webpack_require__(22);
+	var Emitter = __webpack_require__(50);
+	var parser = __webpack_require__(45);
+	var on = __webpack_require__(42);
+	var bind = __webpack_require__(51);
+	var object = __webpack_require__(52);
+	var debug = __webpack_require__(47)('socket.io-client:manager');
+	var indexOf = __webpack_require__(54);
+	var Backoff = __webpack_require__(53);
+	
+	/**
+	 * Module exports
+	 */
+	
+	module.exports = Manager;
+	
+	/**
+	 * `Manager` constructor.
+	 *
+	 * @param {String} engine instance or engine uri/opts
+	 * @param {Object} options
+	 * @api public
+	 */
+	
+	function Manager(uri, opts){
+	  if (!(this instanceof Manager)) return new Manager(uri, opts);
+	  if (uri && ('object' == typeof uri)) {
+	    opts = uri;
+	    uri = undefined;
+	  }
+	  opts = opts || {};
+	
+	  opts.path = opts.path || '/socket.io';
+	  this.nsps = {};
+	  this.subs = [];
+	  this.opts = opts;
+	  this.reconnection(opts.reconnection !== false);
+	  this.reconnectionAttempts(opts.reconnectionAttempts || Infinity);
+	  this.reconnectionDelay(opts.reconnectionDelay || 1000);
+	  this.reconnectionDelayMax(opts.reconnectionDelayMax || 5000);
+	  this.randomizationFactor(opts.randomizationFactor || 0.5);
+	  this.backoff = new Backoff({
+	    min: this.reconnectionDelay(),
+	    max: this.reconnectionDelayMax(),
+	    jitter: this.randomizationFactor()
+	  });
+	  this.timeout(null == opts.timeout ? 20000 : opts.timeout);
+	  this.readyState = 'closed';
+	  this.uri = uri;
+	  this.connected = [];
+	  this.encoding = false;
+	  this.packetBuffer = [];
+	  this.encoder = new parser.Encoder();
+	  this.decoder = new parser.Decoder();
+	  this.autoConnect = opts.autoConnect !== false;
+	  if (this.autoConnect) this.open();
+	}
+	
+	/**
+	 * Propagate given event to sockets and emit on `this`
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.emitAll = function() {
+	  this.emit.apply(this, arguments);
+	  for (var nsp in this.nsps) {
+	    this.nsps[nsp].emit.apply(this.nsps[nsp], arguments);
+	  }
+	};
+	
+	/**
+	 * Update `socket.id` of all sockets
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.updateSocketIds = function(){
+	  for (var nsp in this.nsps) {
+	    this.nsps[nsp].id = this.engine.id;
+	  }
+	};
+	
+	/**
+	 * Mix in `Emitter`.
+	 */
+	
+	Emitter(Manager.prototype);
+	
+	/**
+	 * Sets the `reconnection` config.
+	 *
+	 * @param {Boolean} true/false if it should automatically reconnect
+	 * @return {Manager} self or value
+	 * @api public
+	 */
+	
+	Manager.prototype.reconnection = function(v){
+	  if (!arguments.length) return this._reconnection;
+	  this._reconnection = !!v;
+	  return this;
+	};
+	
+	/**
+	 * Sets the reconnection attempts config.
+	 *
+	 * @param {Number} max reconnection attempts before giving up
+	 * @return {Manager} self or value
+	 * @api public
+	 */
+	
+	Manager.prototype.reconnectionAttempts = function(v){
+	  if (!arguments.length) return this._reconnectionAttempts;
+	  this._reconnectionAttempts = v;
+	  return this;
+	};
+	
+	/**
+	 * Sets the delay between reconnections.
+	 *
+	 * @param {Number} delay
+	 * @return {Manager} self or value
+	 * @api public
+	 */
+	
+	Manager.prototype.reconnectionDelay = function(v){
+	  if (!arguments.length) return this._reconnectionDelay;
+	  this._reconnectionDelay = v;
+	  this.backoff && this.backoff.setMin(v);
+	  return this;
+	};
+	
+	Manager.prototype.randomizationFactor = function(v){
+	  if (!arguments.length) return this._randomizationFactor;
+	  this._randomizationFactor = v;
+	  this.backoff && this.backoff.setJitter(v);
+	  return this;
+	};
+	
+	/**
+	 * Sets the maximum delay between reconnections.
+	 *
+	 * @param {Number} delay
+	 * @return {Manager} self or value
+	 * @api public
+	 */
+	
+	Manager.prototype.reconnectionDelayMax = function(v){
+	  if (!arguments.length) return this._reconnectionDelayMax;
+	  this._reconnectionDelayMax = v;
+	  this.backoff && this.backoff.setMax(v);
+	  return this;
+	};
+	
+	/**
+	 * Sets the connection timeout. `false` to disable
+	 *
+	 * @return {Manager} self or value
+	 * @api public
+	 */
+	
+	Manager.prototype.timeout = function(v){
+	  if (!arguments.length) return this._timeout;
+	  this._timeout = v;
+	  return this;
+	};
+	
+	/**
+	 * Starts trying to reconnect if reconnection is enabled and we have not
+	 * started reconnecting yet
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.maybeReconnectOnOpen = function() {
+	  // Only try to reconnect if it's the first time we're connecting
+	  if (!this.reconnecting && this._reconnection && this.backoff.attempts === 0) {
+	    // keeps reconnection from firing twice for the same reconnection loop
+	    this.reconnect();
+	  }
+	};
+	
+	
+	/**
+	 * Sets the current transport `socket`.
+	 *
+	 * @param {Function} optional, callback
+	 * @return {Manager} self
+	 * @api public
+	 */
+	
+	Manager.prototype.open =
+	Manager.prototype.connect = function(fn){
+	  debug('readyState %s', this.readyState);
+	  if (~this.readyState.indexOf('open')) return this;
+	
+	  debug('opening %s', this.uri);
+	  this.engine = eio(this.uri, this.opts);
+	  var socket = this.engine;
+	  var self = this;
+	  this.readyState = 'opening';
+	  this.skipReconnect = false;
+	
+	  // emit `open`
+	  var openSub = on(socket, 'open', function() {
+	    self.onopen();
+	    fn && fn();
+	  });
+	
+	  // emit `connect_error`
+	  var errorSub = on(socket, 'error', function(data){
+	    debug('connect_error');
+	    self.cleanup();
+	    self.readyState = 'closed';
+	    self.emitAll('connect_error', data);
+	    if (fn) {
+	      var err = new Error('Connection error');
+	      err.data = data;
+	      fn(err);
+	    } else {
+	      // Only do this if there is no fn to handle the error
+	      self.maybeReconnectOnOpen();
+	    }
+	  });
+	
+	  // emit `connect_timeout`
+	  if (false !== this._timeout) {
+	    var timeout = this._timeout;
+	    debug('connect attempt will timeout after %d', timeout);
+	
+	    // set timer
+	    var timer = setTimeout(function(){
+	      debug('connect attempt timed out after %d', timeout);
+	      openSub.destroy();
+	      socket.close();
+	      socket.emit('error', 'timeout');
+	      self.emitAll('connect_timeout', timeout);
+	    }, timeout);
+	
+	    this.subs.push({
+	      destroy: function(){
+	        clearTimeout(timer);
+	      }
+	    });
+	  }
+	
+	  this.subs.push(openSub);
+	  this.subs.push(errorSub);
+	
+	  return this;
+	};
+	
+	/**
+	 * Called upon transport open.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.onopen = function(){
+	  debug('open');
+	
+	  // clear old subs
+	  this.cleanup();
+	
+	  // mark as open
+	  this.readyState = 'open';
+	  this.emit('open');
+	
+	  // add new subs
+	  var socket = this.engine;
+	  this.subs.push(on(socket, 'data', bind(this, 'ondata')));
+	  this.subs.push(on(this.decoder, 'decoded', bind(this, 'ondecoded')));
+	  this.subs.push(on(socket, 'error', bind(this, 'onerror')));
+	  this.subs.push(on(socket, 'close', bind(this, 'onclose')));
+	};
+	
+	/**
+	 * Called with data.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.ondata = function(data){
+	  this.decoder.add(data);
+	};
+	
+	/**
+	 * Called when parser fully decodes a packet.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.ondecoded = function(packet) {
+	  this.emit('packet', packet);
+	};
+	
+	/**
+	 * Called upon socket error.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.onerror = function(err){
+	  debug('error', err);
+	  this.emitAll('error', err);
+	};
+	
+	/**
+	 * Creates a new socket for the given `nsp`.
+	 *
+	 * @return {Socket}
+	 * @api public
+	 */
+	
+	Manager.prototype.socket = function(nsp){
+	  var socket = this.nsps[nsp];
+	  if (!socket) {
+	    socket = new Socket(this, nsp);
+	    this.nsps[nsp] = socket;
+	    var self = this;
+	    socket.on('connect', function(){
+	      socket.id = self.engine.id;
+	      if (!~indexOf(self.connected, socket)) {
+	        self.connected.push(socket);
+	      }
+	    });
+	  }
+	  return socket;
+	};
+	
+	/**
+	 * Called upon a socket close.
+	 *
+	 * @param {Socket} socket
+	 */
+	
+	Manager.prototype.destroy = function(socket){
+	  var index = indexOf(this.connected, socket);
+	  if (~index) this.connected.splice(index, 1);
+	  if (this.connected.length) return;
+	
+	  this.close();
+	};
+	
+	/**
+	 * Writes a packet.
+	 *
+	 * @param {Object} packet
+	 * @api private
+	 */
+	
+	Manager.prototype.packet = function(packet){
+	  debug('writing packet %j', packet);
+	  var self = this;
+	
+	  if (!self.encoding) {
+	    // encode, then write to engine with result
+	    self.encoding = true;
+	    this.encoder.encode(packet, function(encodedPackets) {
+	      for (var i = 0; i < encodedPackets.length; i++) {
+	        self.engine.write(encodedPackets[i]);
+	      }
+	      self.encoding = false;
+	      self.processPacketQueue();
+	    });
+	  } else { // add packet to the queue
+	    self.packetBuffer.push(packet);
+	  }
+	};
+	
+	/**
+	 * If packet buffer is non-empty, begins encoding the
+	 * next packet in line.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.processPacketQueue = function() {
+	  if (this.packetBuffer.length > 0 && !this.encoding) {
+	    var pack = this.packetBuffer.shift();
+	    this.packet(pack);
+	  }
+	};
+	
+	/**
+	 * Clean up transport subscriptions and packet buffer.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.cleanup = function(){
+	  var sub;
+	  while (sub = this.subs.shift()) sub.destroy();
+	
+	  this.packetBuffer = [];
+	  this.encoding = false;
+	
+	  this.decoder.destroy();
+	};
+	
+	/**
+	 * Close the current socket.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.close =
+	Manager.prototype.disconnect = function(){
+	  this.skipReconnect = true;
+	  this.backoff.reset();
+	  this.readyState = 'closed';
+	  this.engine && this.engine.close();
+	};
+	
+	/**
+	 * Called upon engine close.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.onclose = function(reason){
+	  debug('close');
+	  this.cleanup();
+	  this.backoff.reset();
+	  this.readyState = 'closed';
+	  this.emit('close', reason);
+	  if (this._reconnection && !this.skipReconnect) {
+	    this.reconnect();
+	  }
+	};
+	
+	/**
+	 * Attempt a reconnection.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.reconnect = function(){
+	  if (this.reconnecting || this.skipReconnect) return this;
+	
+	  var self = this;
+	
+	  if (this.backoff.attempts >= this._reconnectionAttempts) {
+	    debug('reconnect failed');
+	    this.backoff.reset();
+	    this.emitAll('reconnect_failed');
+	    this.reconnecting = false;
+	  } else {
+	    var delay = this.backoff.duration();
+	    debug('will wait %dms before reconnect attempt', delay);
+	
+	    this.reconnecting = true;
+	    var timer = setTimeout(function(){
+	      if (self.skipReconnect) return;
+	
+	      debug('attempting reconnect');
+	      self.emitAll('reconnect_attempt', self.backoff.attempts);
+	      self.emitAll('reconnecting', self.backoff.attempts);
+	
+	      // check again for the case socket closed in above events
+	      if (self.skipReconnect) return;
+	
+	      self.open(function(err){
+	        if (err) {
+	          debug('reconnect attempt error');
+	          self.reconnecting = false;
+	          self.reconnect();
+	          self.emitAll('reconnect_error', err.data);
+	        } else {
+	          debug('reconnect success');
+	          self.onreconnect();
+	        }
+	      });
+	    }, delay);
+	
+	    this.subs.push({
+	      destroy: function(){
+	        clearTimeout(timer);
+	      }
+	    });
+	  }
+	};
+	
+	/**
+	 * Called upon successful reconnect.
+	 *
+	 * @api private
+	 */
+	
+	Manager.prototype.onreconnect = function(){
+	  var attempt = this.backoff.attempts;
+	  this.reconnecting = false;
+	  this.backoff.reset();
+	  this.updateSocketIds();
+	  this.emitAll('reconnect', attempt);
+	};
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * Module dependencies.
+	 */
+	
+	var parser = __webpack_require__(45);
+	var Emitter = __webpack_require__(50);
+	var toArray = __webpack_require__(55);
+	var on = __webpack_require__(42);
+	var bind = __webpack_require__(51);
+	var debug = __webpack_require__(47)('socket.io-client:socket');
+	var hasBin = __webpack_require__(56);
+	
+	/**
+	 * Module exports.
+	 */
+	
+	module.exports = exports = Socket;
+	
+	/**
+	 * Internal events (blacklisted).
+	 * These events can't be emitted by the user.
+	 *
+	 * @api private
+	 */
+	
+	var events = {
+	  connect: 1,
+	  connect_error: 1,
+	  connect_timeout: 1,
+	  disconnect: 1,
+	  error: 1,
+	  reconnect: 1,
+	  reconnect_attempt: 1,
+	  reconnect_failed: 1,
+	  reconnect_error: 1,
+	  reconnecting: 1
+	};
+	
+	/**
+	 * Shortcut to `Emitter#emit`.
+	 */
+	
+	var emit = Emitter.prototype.emit;
+	
+	/**
+	 * `Socket` constructor.
+	 *
+	 * @api public
+	 */
+	
+	function Socket(io, nsp){
+	  this.io = io;
+	  this.nsp = nsp;
+	  this.json = this; // compat
+	  this.ids = 0;
+	  this.acks = {};
+	  if (this.io.autoConnect) this.open();
+	  this.receiveBuffer = [];
+	  this.sendBuffer = [];
+	  this.connected = false;
+	  this.disconnected = true;
+	}
+	
+	/**
+	 * Mix in `Emitter`.
+	 */
+	
+	Emitter(Socket.prototype);
+	
+	/**
+	 * Subscribe to open, close and packet events
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.subEvents = function() {
+	  if (this.subs) return;
+	
+	  var io = this.io;
+	  this.subs = [
+	    on(io, 'open', bind(this, 'onopen')),
+	    on(io, 'packet', bind(this, 'onpacket')),
+	    on(io, 'close', bind(this, 'onclose'))
+	  ];
+	};
+	
+	/**
+	 * "Opens" the socket.
+	 *
+	 * @api public
+	 */
+	
+	Socket.prototype.open =
+	Socket.prototype.connect = function(){
+	  if (this.connected) return this;
+	
+	  this.subEvents();
+	  this.io.open(); // ensure open
+	  if ('open' == this.io.readyState) this.onopen();
+	  return this;
+	};
+	
+	/**
+	 * Sends a `message` event.
+	 *
+	 * @return {Socket} self
+	 * @api public
+	 */
+	
+	Socket.prototype.send = function(){
+	  var args = toArray(arguments);
+	  args.unshift('message');
+	  this.emit.apply(this, args);
+	  return this;
+	};
+	
+	/**
+	 * Override `emit`.
+	 * If the event is in `events`, it's emitted normally.
+	 *
+	 * @param {String} event name
+	 * @return {Socket} self
+	 * @api public
+	 */
+	
+	Socket.prototype.emit = function(ev){
+	  if (events.hasOwnProperty(ev)) {
+	    emit.apply(this, arguments);
+	    return this;
+	  }
+	
+	  var args = toArray(arguments);
+	  var parserType = parser.EVENT; // default
+	  if (hasBin(args)) { parserType = parser.BINARY_EVENT; } // binary
+	  var packet = { type: parserType, data: args };
+	
+	  // event ack callback
+	  if ('function' == typeof args[args.length - 1]) {
+	    debug('emitting packet with ack id %d', this.ids);
+	    this.acks[this.ids] = args.pop();
+	    packet.id = this.ids++;
+	  }
+	
+	  if (this.connected) {
+	    this.packet(packet);
+	  } else {
+	    this.sendBuffer.push(packet);
+	  }
+	
+	  return this;
+	};
+	
+	/**
+	 * Sends a packet.
+	 *
+	 * @param {Object} packet
+	 * @api private
+	 */
+	
+	Socket.prototype.packet = function(packet){
+	  packet.nsp = this.nsp;
+	  this.io.packet(packet);
+	};
+	
+	/**
+	 * Called upon engine `open`.
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.onopen = function(){
+	  debug('transport is open - connecting');
+	
+	  // write connect packet if necessary
+	  if ('/' != this.nsp) {
+	    this.packet({ type: parser.CONNECT });
+	  }
+	};
+	
+	/**
+	 * Called upon engine `close`.
+	 *
+	 * @param {String} reason
+	 * @api private
+	 */
+	
+	Socket.prototype.onclose = function(reason){
+	  debug('close (%s)', reason);
+	  this.connected = false;
+	  this.disconnected = true;
+	  delete this.id;
+	  this.emit('disconnect', reason);
+	};
+	
+	/**
+	 * Called with socket packet.
+	 *
+	 * @param {Object} packet
+	 * @api private
+	 */
+	
+	Socket.prototype.onpacket = function(packet){
+	  if (packet.nsp != this.nsp) return;
+	
+	  switch (packet.type) {
+	    case parser.CONNECT:
+	      this.onconnect();
+	      break;
+	
+	    case parser.EVENT:
+	      this.onevent(packet);
+	      break;
+	
+	    case parser.BINARY_EVENT:
+	      this.onevent(packet);
+	      break;
+	
+	    case parser.ACK:
+	      this.onack(packet);
+	      break;
+	
+	    case parser.BINARY_ACK:
+	      this.onack(packet);
+	      break;
+	
+	    case parser.DISCONNECT:
+	      this.ondisconnect();
+	      break;
+	
+	    case parser.ERROR:
+	      this.emit('error', packet.data);
+	      break;
+	  }
+	};
+	
+	/**
+	 * Called upon a server event.
+	 *
+	 * @param {Object} packet
+	 * @api private
+	 */
+	
+	Socket.prototype.onevent = function(packet){
+	  var args = packet.data || [];
+	  debug('emitting event %j', args);
+	
+	  if (null != packet.id) {
+	    debug('attaching ack callback to event');
+	    args.push(this.ack(packet.id));
+	  }
+	
+	  if (this.connected) {
+	    emit.apply(this, args);
+	  } else {
+	    this.receiveBuffer.push(args);
+	  }
+	};
+	
+	/**
+	 * Produces an ack callback to emit with an event.
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.ack = function(id){
+	  var self = this;
+	  var sent = false;
+	  return function(){
+	    // prevent double callbacks
+	    if (sent) return;
+	    sent = true;
+	    var args = toArray(arguments);
+	    debug('sending ack %j', args);
+	
+	    var type = hasBin(args) ? parser.BINARY_ACK : parser.ACK;
+	    self.packet({
+	      type: type,
+	      id: id,
+	      data: args
+	    });
+	  };
+	};
+	
+	/**
+	 * Called upon a server acknowlegement.
+	 *
+	 * @param {Object} packet
+	 * @api private
+	 */
+	
+	Socket.prototype.onack = function(packet){
+	  debug('calling ack %s with %j', packet.id, packet.data);
+	  var fn = this.acks[packet.id];
+	  fn.apply(this, packet.data);
+	  delete this.acks[packet.id];
+	};
+	
+	/**
+	 * Called upon server connect.
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.onconnect = function(){
+	  this.connected = true;
+	  this.disconnected = false;
+	  this.emit('connect');
+	  this.emitBuffered();
+	};
+	
+	/**
+	 * Emit buffered events (received and emitted).
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.emitBuffered = function(){
+	  var i;
+	  for (i = 0; i < this.receiveBuffer.length; i++) {
+	    emit.apply(this, this.receiveBuffer[i]);
+	  }
+	  this.receiveBuffer = [];
+	
+	  for (i = 0; i < this.sendBuffer.length; i++) {
+	    this.packet(this.sendBuffer[i]);
+	  }
+	  this.sendBuffer = [];
+	};
+	
+	/**
+	 * Called upon server disconnect.
+	 *
+	 * @api private
+	 */
+	
+	Socket.prototype.ondisconnect = function(){
+	  debug('server disconnect (%s)', this.nsp);
+	  this.destroy();
+	  this.onclose('io server disconnect');
+	};
+	
+	/**
+	 * Called upon forced client/server side disconnections,
+	 * this method ensures the manager stops tracking us and
+	 * that reconnections don't get triggered for this.
+	 *
+	 * @api private.
+	 */
+	
+	Socket.prototype.destroy = function(){
+	  if (this.subs) {
+	    // clean subscriptions to avoid reconnections
+	    for (var i = 0; i < this.subs.length; i++) {
+	      this.subs[i].destroy();
+	    }
+	    this.subs = null;
+	  }
+	
+	  this.io.destroy(this);
+	};
+	
+	/**
+	 * Disconnects the socket manually.
+	 *
+	 * @return {Socket} self
+	 * @api public
+	 */
+	
+	Socket.prototype.close =
+	Socket.prototype.disconnect = function(){
+	  if (this.connected) {
+	    debug('performing disconnect (%s)', this.nsp);
+	    this.packet({ type: parser.DISCONNECT });
+	  }
+	
+	  // remove socket from pool
+	  this.destroy();
+	
+	  if (this.connected) {
+	    // fire events
+	    this.onclose('io client disconnect');
+	  }
+	  return this;
+	};
+
+
+/***/ },
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -10972,11 +12086,11 @@
 
 
 /***/ },
-/* 16 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27),
-	    maker = __webpack_require__(26).instanceJoinCreator;
+	var _ = __webpack_require__(35),
+	    maker = __webpack_require__(34).instanceJoinCreator;
 	
 	/**
 	 * Extract child listenables from a parent from their
@@ -11198,10 +12312,10 @@
 
 
 /***/ },
-/* 17 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27);
+	var _ = __webpack_require__(35);
 	
 	/**
 	 * A module of methods for object that you want to be able to listen to.
@@ -11352,7 +12466,7 @@
 
 
 /***/ },
-/* 18 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -11364,12 +12478,12 @@
 
 
 /***/ },
-/* 19 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27),
-	    Reflux = __webpack_require__(11),
-	    Keep = __webpack_require__(28),
+	var _ = __webpack_require__(35),
+	    Reflux = __webpack_require__(16),
+	    Keep = __webpack_require__(36),
 	    allowed = {preEmit:1,shouldEmit:1};
 	
 	/**
@@ -11435,15 +12549,15 @@
 
 
 /***/ },
-/* 20 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27),
-	    Reflux = __webpack_require__(11),
-	    Keep = __webpack_require__(28),
-	    mixer = __webpack_require__(35),
+	var _ = __webpack_require__(35),
+	    Reflux = __webpack_require__(16),
+	    Keep = __webpack_require__(36),
+	    mixer = __webpack_require__(43),
 	    allowed = {preEmit:1,shouldEmit:1},
-	    bindMethods = __webpack_require__(36);
+	    bindMethods = __webpack_require__(44);
 	
 	/**
 	 * Creates an event emitting Data Store. It is mixed in with functions
@@ -11502,11 +12616,11 @@
 
 
 /***/ },
-/* 21 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(11),
-	    _ = __webpack_require__(27);
+	var Reflux = __webpack_require__(16),
+	    _ = __webpack_require__(35);
 	
 	module.exports = function(listenable,key){
 	    return {
@@ -11530,11 +12644,11 @@
 
 
 /***/ },
-/* 22 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(11),
-	  _ = __webpack_require__(27);
+	var Reflux = __webpack_require__(16),
+	  _ = __webpack_require__(35);
 	
 	module.exports = function(listenable, key, filterFunc) {
 	    filterFunc = _.isFunction(key) ? key : filterFunc;
@@ -11575,11 +12689,11 @@
 
 
 /***/ },
-/* 23 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27),
-	    ListenerMethods = __webpack_require__(16);
+	var _ = __webpack_require__(35),
+	    ListenerMethods = __webpack_require__(24);
 	
 	/**
 	 * A module meant to be consumed as a mixin by a React component. Supplies the methods from
@@ -11598,10 +12712,10 @@
 
 
 /***/ },
-/* 24 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(11);
+	var Reflux = __webpack_require__(16);
 	
 	
 	/**
@@ -11640,10 +12754,10 @@
 
 
 /***/ },
-/* 25 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Reflux = __webpack_require__(11);
+	var Reflux = __webpack_require__(16);
 	
 	/**
 	 * A mixin factory for a React component. Meant as a more convenient way of using the `listenerMixin`,
@@ -11679,7 +12793,7 @@
 
 
 /***/ },
-/* 26 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -11687,8 +12801,8 @@
 	 */
 	
 	var slice = Array.prototype.slice,
-	    _ = __webpack_require__(27),
-	    createStore = __webpack_require__(20),
+	    _ = __webpack_require__(35),
+	    createStore = __webpack_require__(28),
 	    strategyMethodNames = {
 	        strict: "joinStrict",
 	        first: "joinLeading",
@@ -11791,7 +12905,7 @@
 
 
 /***/ },
-/* 27 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -11821,7 +12935,7 @@
 	    return typeof value === 'function';
 	};
 	
-	exports.EventEmitter = __webpack_require__(40);
+	exports.EventEmitter = __webpack_require__(58);
 	
 	exports.nextTick = function(callback) {
 	    setTimeout(callback, 0);
@@ -11843,7 +12957,7 @@
 	    return o;
 	};
 	
-	exports.Promise = __webpack_require__(41);
+	exports.Promise = __webpack_require__(61);
 	
 	exports.createPromise = function(resolver) {
 	    return new exports.Promise(resolver);
@@ -11861,7 +12975,7 @@
 
 
 /***/ },
-/* 28 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports.createdStores = [];
@@ -11879,15 +12993,7 @@
 
 
 /***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	module.exports = __webpack_require__(38);
-
-
-/***/ },
-/* 30 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -16756,7 +17862,7 @@
 	}));
 
 /***/ },
-/* 31 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -16966,12 +18072,12 @@
 
 
 /***/ },
-/* 32 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Imm = __webpack_require__(30);
-	var Util = __webpack_require__(31);
-	var ChangesDescriptor = __webpack_require__(39);
+	var Imm = __webpack_require__(37);
+	var Util = __webpack_require__(38);
+	var ChangesDescriptor = __webpack_require__(57);
 	
 	/* ---------------- */
 	/* Private helpers. */
@@ -17729,11 +18835,11 @@
 
 
 /***/ },
-/* 33 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Imm = __webpack_require__(30);
-	var Binding = __webpack_require__(32);
+	var Imm = __webpack_require__(37);
+	var Binding = __webpack_require__(39);
 	
 	var getHistoryBinding, initHistory, clearHistory, destroyHistory, listenForChanges, revertToStep, revert;
 	
@@ -17895,11 +19001,11 @@
 
 
 /***/ },
-/* 34 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Util  = __webpack_require__(31);
-	var React = __webpack_require__(3);
+	var Util  = __webpack_require__(38);
+	var React = __webpack_require__(4);
 	
 	var _ = (function() {
 	  if (React) return React.DOM;
@@ -17960,10 +19066,40 @@
 
 
 /***/ },
-/* 35 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(27);
+	
+	/**
+	 * Module exports.
+	 */
+	
+	module.exports = on;
+	
+	/**
+	 * Helper for subscriptions.
+	 *
+	 * @param {Object|EventEmitter} obj with `Emitter` mixin or `EventEmitter`
+	 * @param {String} event name
+	 * @param {Function} callback
+	 * @api public
+	 */
+	
+	function on(obj, ev, fn) {
+	  obj.on(ev, fn);
+	  return {
+	    destroy: function(){
+	      obj.removeListener(ev, fn);
+	    }
+	  };
+	}
+
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(35);
 	
 	module.exports = function mix(def) {
 	    var composed = {
@@ -18023,7 +19159,7 @@
 
 
 /***/ },
-/* 36 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function(store, definition) {
@@ -18042,1513 +19178,7 @@
 
 
 /***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @name Callback
-	 * @namespace
-	 * @classdesc Miscellaneous callback util functions.
-	 */
-	var Util = __webpack_require__(31);
-	
-	module.exports = {
-	
-	  /** Create callback used to set binding value on an event.
-	   * @param {Binding} binding binding
-	   * @param {String|Array} [subpath] subpath as a dot-separated string or an array of strings and numbers
-	   * @param {Function} [f] value transformer
-	   * @returns {Function} callback
-	   * @memberOf Callback */
-	  set: function (binding, subpath, f) {
-	    var args = Util.resolveArgs(
-	      arguments,
-	      'binding', function (x) { return Util.canRepresentSubpath(x) ? 'subpath' : null; }, '?f'
-	    );
-	
-	    return function (event) {
-	      var value = event.target.value;
-	      binding.set(args.subpath, args.f ? args.f(value) : value);
-	    };
-	  },
-	
-	  /** Create callback used to delete binding value on an event.
-	   * @param {Binding} binding binding
-	   * @param {String|String[]} [subpath] subpath as a dot-separated string or an array of strings and numbers
-	   * @param {Function} [pred] predicate
-	   * @returns {Function} callback
-	   * @memberOf Callback */
-	  remove: function (binding, subpath, pred) {
-	    var args = Util.resolveArgs(
-	      arguments,
-	      'binding', function (x) { return Util.canRepresentSubpath(x) ? 'subpath' : null; }, '?pred'
-	    );
-	
-	    return function (event) {
-	      var value = event.target.value;
-	      if (!args.pred || args.pred(value)) {
-	        binding.remove(args.subpath);
-	      }
-	    };
-	  },
-	
-	  /** Create callback invoked when specified key combination is pressed.
-	   * @param {Function} cb callback
-	   * @param {String|Array} key key
-	   * @param {Boolean} [shiftKey] shift key flag
-	   * @param {Boolean} [ctrlKey] ctrl key flag
-	   * @returns {Function} callback
-	   * @memberOf Callback */
-	  onKey: function (cb, key, shiftKey, ctrlKey) {
-	    var effectiveShiftKey = shiftKey || false;
-	    var effectiveCtrlKey = ctrlKey || false;
-	    return function (event) {
-	      var keyMatched = typeof key === 'string' ?
-	        event.key === key :
-	        Util.find(key, function (k) { return k === event.key; });
-	
-	      if (keyMatched && event.shiftKey === effectiveShiftKey && event.ctrlKey === effectiveCtrlKey) {
-	        cb(event);
-	      }
-	    };
-	  },
-	
-	  /** Create callback invoked when enter key is pressed.
-	   * @param {Function} cb callback
-	   * @returns {Function} callback
-	   * @memberOf Callback */
-	  onEnter: function (cb) {
-	    return this.onKey(cb, 'Enter');
-	  },
-	
-	  /** Create callback invoked when escape key is pressed.
-	   * @param {Function} cb callback
-	   * @returns {Function} callback
-	   * @memberOf Callback */
-	  onEscape: function (cb) {
-	    return this.onKey(cb, 'Escape');
-	  }
-	
-	};
-	
-	module.exports['delete'] = module.exports.remove;
-
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * Module dependencies.
-	 */
-	
-	var url = __webpack_require__(42);
-	var parser = __webpack_require__(46);
-	var Manager = __webpack_require__(43);
-	var debug = __webpack_require__(47)('socket.io-client');
-	
-	/**
-	 * Module exports.
-	 */
-	
-	module.exports = exports = lookup;
-	
-	/**
-	 * Managers cache.
-	 */
-	
-	var cache = exports.managers = {};
-	
-	/**
-	 * Looks up an existing `Manager` for multiplexing.
-	 * If the user summons:
-	 *
-	 *   `io('http://localhost/a');`
-	 *   `io('http://localhost/b');`
-	 *
-	 * We reuse the existing instance based on same scheme/port/host,
-	 * and we initialize sockets for each namespace.
-	 *
-	 * @api public
-	 */
-	
-	function lookup(uri, opts) {
-	  if (typeof uri == 'object') {
-	    opts = uri;
-	    uri = undefined;
-	  }
-	
-	  opts = opts || {};
-	
-	  var parsed = url(uri);
-	  var source = parsed.source;
-	  var id = parsed.id;
-	  var io;
-	
-	  if (opts.forceNew || opts['force new connection'] || false === opts.multiplex) {
-	    debug('ignoring socket cache for %s', source);
-	    io = Manager(source, opts);
-	  } else {
-	    if (!cache[id]) {
-	      debug('new io instance for %s', source);
-	      cache[id] = Manager(source, opts);
-	    }
-	    io = cache[id];
-	  }
-	
-	  return io.socket(parsed.path);
-	}
-	
-	/**
-	 * Protocol version.
-	 *
-	 * @api public
-	 */
-	
-	exports.protocol = parser.protocol;
-	
-	/**
-	 * `connect`.
-	 *
-	 * @param {String} uri
-	 * @api public
-	 */
-	
-	exports.connect = lookup;
-	
-	/**
-	 * Expose constructors for standalone build.
-	 *
-	 * @api public
-	 */
-	
-	exports.Manager = __webpack_require__(43);
-	exports.Socket = __webpack_require__(44);
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/** Changes descriptor constructor.
-	 * @param {Array} path absolute changed path
-	 * @param {Array} listenerPath absolute listener path
-	 * @param {Boolean} valueChanged value changed flag
-	 * @param {Immutable.Map} previousValue previous backing value
-	 * @param {Immutable.Map} previousMeta previous meta binding backing value
-	 * @public
-	 * @class ChangesDescriptor
-	 * @classdesc Encapsulates binding changes for binding listeners. */
-	var ChangesDescriptor =
-	  function (path, listenerPath, valueChanged, previousValue, previousMeta) {
-	    /** @private */
-	    this._path = path;
-	    /** @private */
-	    this._listenerPath = listenerPath;
-	    /** @private */
-	    this._valueChanged = valueChanged;
-	    /** @private */
-	    this._previousValue = previousValue;
-	    /** @private */
-	    this._previousMeta = previousMeta;
-	  };
-	
-	ChangesDescriptor.prototype = Object.freeze( /** @lends ChangesDescriptor.prototype */ {
-	  /** Get changed path relative to binding's path listener was installed on.
-	   * @return {Array} changed path */
-	  getPath: function () {
-	    var listenerPathLen = this._listenerPath.length;
-	    return listenerPathLen === this._path.length ? [] : this._path.slice(listenerPathLen);
-	  },
-	
-	  /** Check if binding's value was changed.
-	   * @returns {Boolean} */
-	  isValueChanged: function () {
-	    return this._valueChanged;
-	  },
-	
-	  /** Check if meta binding's value was changed.
-	   * @returns {Boolean} */
-	  isMetaChanged: function () {
-	    return !!this._previousMeta;
-	  },
-	
-	  /** Get previous value at listening path.
-	   * @returns {*} previous value at listening path or null if not changed */
-	  getPreviousValue: function () {
-	    return this._previousValue && this._previousValue.getIn(this._listenerPath);
-	  },
-	
-	  /** Get previous meta at listening path.
-	   * @returns {*} */
-	  getPreviousMeta: function () {
-	    return this._previousMeta && this._previousMeta.getIn(this._listenerPath);
-	  }
-	});
-	
-	module.exports = ChangesDescriptor;
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	/**
-	 * Representation of a single EventEmitter function.
-	 *
-	 * @param {Function} fn Event handler to be called.
-	 * @param {Mixed} context Context for function execution.
-	 * @param {Boolean} once Only emit once
-	 * @api private
-	 */
-	function EE(fn, context, once) {
-	  this.fn = fn;
-	  this.context = context;
-	  this.once = once || false;
-	}
-	
-	/**
-	 * Minimal EventEmitter interface that is molded against the Node.js
-	 * EventEmitter interface.
-	 *
-	 * @constructor
-	 * @api public
-	 */
-	function EventEmitter() { /* Nothing to set */ }
-	
-	/**
-	 * Holds the assigned EventEmitters by name.
-	 *
-	 * @type {Object}
-	 * @private
-	 */
-	EventEmitter.prototype._events = undefined;
-	
-	/**
-	 * Return a list of assigned event listeners.
-	 *
-	 * @param {String} event The events that should be listed.
-	 * @returns {Array}
-	 * @api public
-	 */
-	EventEmitter.prototype.listeners = function listeners(event) {
-	  if (!this._events || !this._events[event]) return [];
-	  if (this._events[event].fn) return [this._events[event].fn];
-	
-	  for (var i = 0, l = this._events[event].length, ee = new Array(l); i < l; i++) {
-	    ee[i] = this._events[event][i].fn;
-	  }
-	
-	  return ee;
-	};
-	
-	/**
-	 * Emit an event to all registered event listeners.
-	 *
-	 * @param {String} event The name of the event.
-	 * @returns {Boolean} Indication if we've emitted an event.
-	 * @api public
-	 */
-	EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
-	  if (!this._events || !this._events[event]) return false;
-	
-	  var listeners = this._events[event]
-	    , len = arguments.length
-	    , args
-	    , i;
-	
-	  if ('function' === typeof listeners.fn) {
-	    if (listeners.once) this.removeListener(event, listeners.fn, true);
-	
-	    switch (len) {
-	      case 1: return listeners.fn.call(listeners.context), true;
-	      case 2: return listeners.fn.call(listeners.context, a1), true;
-	      case 3: return listeners.fn.call(listeners.context, a1, a2), true;
-	      case 4: return listeners.fn.call(listeners.context, a1, a2, a3), true;
-	      case 5: return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
-	      case 6: return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
-	    }
-	
-	    for (i = 1, args = new Array(len -1); i < len; i++) {
-	      args[i - 1] = arguments[i];
-	    }
-	
-	    listeners.fn.apply(listeners.context, args);
-	  } else {
-	    var length = listeners.length
-	      , j;
-	
-	    for (i = 0; i < length; i++) {
-	      if (listeners[i].once) this.removeListener(event, listeners[i].fn, true);
-	
-	      switch (len) {
-	        case 1: listeners[i].fn.call(listeners[i].context); break;
-	        case 2: listeners[i].fn.call(listeners[i].context, a1); break;
-	        case 3: listeners[i].fn.call(listeners[i].context, a1, a2); break;
-	        default:
-	          if (!args) for (j = 1, args = new Array(len -1); j < len; j++) {
-	            args[j - 1] = arguments[j];
-	          }
-	
-	          listeners[i].fn.apply(listeners[i].context, args);
-	      }
-	    }
-	  }
-	
-	  return true;
-	};
-	
-	/**
-	 * Register a new EventListener for the given event.
-	 *
-	 * @param {String} event Name of the event.
-	 * @param {Functon} fn Callback function.
-	 * @param {Mixed} context The context of the function.
-	 * @api public
-	 */
-	EventEmitter.prototype.on = function on(event, fn, context) {
-	  var listener = new EE(fn, context || this);
-	
-	  if (!this._events) this._events = {};
-	  if (!this._events[event]) this._events[event] = listener;
-	  else {
-	    if (!this._events[event].fn) this._events[event].push(listener);
-	    else this._events[event] = [
-	      this._events[event], listener
-	    ];
-	  }
-	
-	  return this;
-	};
-	
-	/**
-	 * Add an EventListener that's only called once.
-	 *
-	 * @param {String} event Name of the event.
-	 * @param {Function} fn Callback function.
-	 * @param {Mixed} context The context of the function.
-	 * @api public
-	 */
-	EventEmitter.prototype.once = function once(event, fn, context) {
-	  var listener = new EE(fn, context || this, true);
-	
-	  if (!this._events) this._events = {};
-	  if (!this._events[event]) this._events[event] = listener;
-	  else {
-	    if (!this._events[event].fn) this._events[event].push(listener);
-	    else this._events[event] = [
-	      this._events[event], listener
-	    ];
-	  }
-	
-	  return this;
-	};
-	
-	/**
-	 * Remove event listeners.
-	 *
-	 * @param {String} event The event we want to remove.
-	 * @param {Function} fn The listener that we need to find.
-	 * @param {Boolean} once Only remove once listeners.
-	 * @api public
-	 */
-	EventEmitter.prototype.removeListener = function removeListener(event, fn, once) {
-	  if (!this._events || !this._events[event]) return this;
-	
-	  var listeners = this._events[event]
-	    , events = [];
-	
-	  if (fn) {
-	    if (listeners.fn && (listeners.fn !== fn || (once && !listeners.once))) {
-	      events.push(listeners);
-	    }
-	    if (!listeners.fn) for (var i = 0, length = listeners.length; i < length; i++) {
-	      if (listeners[i].fn !== fn || (once && !listeners[i].once)) {
-	        events.push(listeners[i]);
-	      }
-	    }
-	  }
-	
-	  //
-	  // Reset the array, or remove it completely if we have no more listeners.
-	  //
-	  if (events.length) {
-	    this._events[event] = events.length === 1 ? events[0] : events;
-	  } else {
-	    delete this._events[event];
-	  }
-	
-	  return this;
-	};
-	
-	/**
-	 * Remove all listeners or only the listeners for the specified event.
-	 *
-	 * @param {String} event The event want to remove all listeners for.
-	 * @api public
-	 */
-	EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
-	  if (!this._events) return this;
-	
-	  if (event) delete this._events[event];
-	  else this._events = {};
-	
-	  return this;
-	};
-	
-	//
-	// Alias methods names because people roll like that.
-	//
-	EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
-	EventEmitter.prototype.addListener = EventEmitter.prototype.on;
-	
-	//
-	// This function doesn't apply anymore.
-	//
-	EventEmitter.prototype.setMaxListeners = function setMaxListeners() {
-	  return this;
-	};
-	
-	//
-	// Expose the module.
-	//
-	EventEmitter.EventEmitter = EventEmitter;
-	EventEmitter.EventEmitter2 = EventEmitter;
-	EventEmitter.EventEmitter3 = EventEmitter;
-	
-	//
-	// Expose the module.
-	//
-	module.exports = EventEmitter;
-
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global) {/*! Native Promise Only
-	    v0.7.6-a (c) Kyle Simpson
-	    MIT License: http://getify.mit-license.org
-	*/
-	!function(t,n,e){n[t]=n[t]||e(),"undefined"!=typeof module&&module.exports?module.exports=n[t]:"function"=="function"&&__webpack_require__(48)&&!(__WEBPACK_AMD_DEFINE_RESULT__ = function(){return n[t]}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))}("Promise","undefined"!=typeof global?global:this,function(){"use strict";function t(t,n){l.add(t,n),h||(h=y(l.drain))}function n(t){var n,e=typeof t;return null==t||"object"!=e&&"function"!=e||(n=t.then),"function"==typeof n?n:!1}function e(){for(var t=0;t<this.chain.length;t++)o(this,1===this.state?this.chain[t].success:this.chain[t].failure,this.chain[t]);this.chain.length=0}function o(t,e,o){var r,i;try{e===!1?o.reject(t.msg):(r=e===!0?t.msg:e.call(void 0,t.msg),r===o.promise?o.reject(TypeError("Promise-chain cycle")):(i=n(r))?i.call(r,o.resolve,o.reject):o.resolve(r))}catch(c){o.reject(c)}}function r(o){var c,u,a=this;if(!a.triggered){a.triggered=!0,a.def&&(a=a.def);try{(c=n(o))?(u=new f(a),c.call(o,function(){r.apply(u,arguments)},function(){i.apply(u,arguments)})):(a.msg=o,a.state=1,a.chain.length>0&&t(e,a))}catch(s){i.call(u||new f(a),s)}}}function i(n){var o=this;o.triggered||(o.triggered=!0,o.def&&(o=o.def),o.msg=n,o.state=2,o.chain.length>0&&t(e,o))}function c(t,n,e,o){for(var r=0;r<n.length;r++)!function(r){t.resolve(n[r]).then(function(t){e(r,t)},o)}(r)}function f(t){this.def=t,this.triggered=!1}function u(t){this.promise=t,this.state=0,this.triggered=!1,this.chain=[],this.msg=void 0}function a(n){if("function"!=typeof n)throw TypeError("Not a function");if(0!==this.__NPO__)throw TypeError("Not a promise");this.__NPO__=1;var o=new u(this);this.then=function(n,r){var i={success:"function"==typeof n?n:!0,failure:"function"==typeof r?r:!1};return i.promise=new this.constructor(function(t,n){if("function"!=typeof t||"function"!=typeof n)throw TypeError("Not a function");i.resolve=t,i.reject=n}),o.chain.push(i),0!==o.state&&t(e,o),i.promise},this["catch"]=function(t){return this.then(void 0,t)};try{n.call(void 0,function(t){r.call(o,t)},function(t){i.call(o,t)})}catch(c){i.call(o,c)}}var s,h,l,p=Object.prototype.toString,y="undefined"!=typeof setImmediate?function(t){return setImmediate(t)}:setTimeout;try{Object.defineProperty({},"x",{}),s=function(t,n,e,o){return Object.defineProperty(t,n,{value:e,writable:!0,configurable:o!==!1})}}catch(d){s=function(t,n,e){return t[n]=e,t}}l=function(){function t(t,n){this.fn=t,this.self=n,this.next=void 0}var n,e,o;return{add:function(r,i){o=new t(r,i),e?e.next=o:n=o,e=o,o=void 0},drain:function(){var t=n;for(n=e=h=void 0;t;)t.fn.call(t.self),t=t.next}}}();var g=s({},"constructor",a,!1);return s(a,"prototype",g,!1),s(g,"__NPO__",0,!1),s(a,"resolve",function(t){var n=this;return t&&"object"==typeof t&&1===t.__NPO__?t:new n(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");n(t)})}),s(a,"reject",function(t){return new this(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");e(t)})}),s(a,"all",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):0===t.length?n.resolve([]):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");var r=t.length,i=Array(r),f=0;c(n,t,function(t,n){i[t]=n,++f===r&&e(i)},o)})}),s(a,"race",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");c(n,t,function(t,n){e(n)},o)})}),a});
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {
-	/**
-	 * Module dependencies.
-	 */
-	
-	var parseuri = __webpack_require__(49);
-	var debug = __webpack_require__(47)('socket.io-client:url');
-	
-	/**
-	 * Module exports.
-	 */
-	
-	module.exports = url;
-	
-	/**
-	 * URL parser.
-	 *
-	 * @param {String} url
-	 * @param {Object} An object meant to mimic window.location.
-	 *                 Defaults to window.location.
-	 * @api public
-	 */
-	
-	function url(uri, loc){
-	  var obj = uri;
-	
-	  // default to window.location
-	  var loc = loc || global.location;
-	  if (null == uri) uri = loc.protocol + '//' + loc.host;
-	
-	  // relative path support
-	  if ('string' == typeof uri) {
-	    if ('/' == uri.charAt(0)) {
-	      if ('/' == uri.charAt(1)) {
-	        uri = loc.protocol + uri;
-	      } else {
-	        uri = loc.hostname + uri;
-	      }
-	    }
-	
-	    if (!/^(https?|wss?):\/\//.test(uri)) {
-	      debug('protocol-less url %s', uri);
-	      if ('undefined' != typeof loc) {
-	        uri = loc.protocol + '//' + uri;
-	      } else {
-	        uri = 'https://' + uri;
-	      }
-	    }
-	
-	    // parse
-	    debug('parse %s', uri);
-	    obj = parseuri(uri);
-	  }
-	
-	  // make sure we treat `localhost:80` and `localhost` equally
-	  if (!obj.port) {
-	    if (/^(http|ws)$/.test(obj.protocol)) {
-	      obj.port = '80';
-	    }
-	    else if (/^(http|ws)s$/.test(obj.protocol)) {
-	      obj.port = '443';
-	    }
-	  }
-	
-	  obj.path = obj.path || '/';
-	
-	  // define unique id
-	  obj.id = obj.protocol + '://' + obj.host + ':' + obj.port;
-	  // define href
-	  obj.href = obj.protocol + '://' + obj.host + (loc && loc.port == obj.port ? '' : (':' + obj.port));
-	
-	  return obj;
-	}
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * Module dependencies.
-	 */
-	
-	var url = __webpack_require__(42);
-	var eio = __webpack_require__(53);
-	var Socket = __webpack_require__(44);
-	var Emitter = __webpack_require__(50);
-	var parser = __webpack_require__(46);
-	var on = __webpack_require__(45);
-	var bind = __webpack_require__(52);
-	var object = __webpack_require__(54);
-	var debug = __webpack_require__(47)('socket.io-client:manager');
-	var indexOf = __webpack_require__(56);
-	var Backoff = __webpack_require__(57);
-	
-	/**
-	 * Module exports
-	 */
-	
-	module.exports = Manager;
-	
-	/**
-	 * `Manager` constructor.
-	 *
-	 * @param {String} engine instance or engine uri/opts
-	 * @param {Object} options
-	 * @api public
-	 */
-	
-	function Manager(uri, opts){
-	  if (!(this instanceof Manager)) return new Manager(uri, opts);
-	  if (uri && ('object' == typeof uri)) {
-	    opts = uri;
-	    uri = undefined;
-	  }
-	  opts = opts || {};
-	
-	  opts.path = opts.path || '/socket.io';
-	  this.nsps = {};
-	  this.subs = [];
-	  this.opts = opts;
-	  this.reconnection(opts.reconnection !== false);
-	  this.reconnectionAttempts(opts.reconnectionAttempts || Infinity);
-	  this.reconnectionDelay(opts.reconnectionDelay || 1000);
-	  this.reconnectionDelayMax(opts.reconnectionDelayMax || 5000);
-	  this.randomizationFactor(opts.randomizationFactor || 0.5);
-	  this.backoff = new Backoff({
-	    min: this.reconnectionDelay(),
-	    max: this.reconnectionDelayMax(),
-	    jitter: this.randomizationFactor()
-	  });
-	  this.timeout(null == opts.timeout ? 20000 : opts.timeout);
-	  this.readyState = 'closed';
-	  this.uri = uri;
-	  this.connected = [];
-	  this.encoding = false;
-	  this.packetBuffer = [];
-	  this.encoder = new parser.Encoder();
-	  this.decoder = new parser.Decoder();
-	  this.autoConnect = opts.autoConnect !== false;
-	  if (this.autoConnect) this.open();
-	}
-	
-	/**
-	 * Propagate given event to sockets and emit on `this`
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.emitAll = function() {
-	  this.emit.apply(this, arguments);
-	  for (var nsp in this.nsps) {
-	    this.nsps[nsp].emit.apply(this.nsps[nsp], arguments);
-	  }
-	};
-	
-	/**
-	 * Update `socket.id` of all sockets
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.updateSocketIds = function(){
-	  for (var nsp in this.nsps) {
-	    this.nsps[nsp].id = this.engine.id;
-	  }
-	};
-	
-	/**
-	 * Mix in `Emitter`.
-	 */
-	
-	Emitter(Manager.prototype);
-	
-	/**
-	 * Sets the `reconnection` config.
-	 *
-	 * @param {Boolean} true/false if it should automatically reconnect
-	 * @return {Manager} self or value
-	 * @api public
-	 */
-	
-	Manager.prototype.reconnection = function(v){
-	  if (!arguments.length) return this._reconnection;
-	  this._reconnection = !!v;
-	  return this;
-	};
-	
-	/**
-	 * Sets the reconnection attempts config.
-	 *
-	 * @param {Number} max reconnection attempts before giving up
-	 * @return {Manager} self or value
-	 * @api public
-	 */
-	
-	Manager.prototype.reconnectionAttempts = function(v){
-	  if (!arguments.length) return this._reconnectionAttempts;
-	  this._reconnectionAttempts = v;
-	  return this;
-	};
-	
-	/**
-	 * Sets the delay between reconnections.
-	 *
-	 * @param {Number} delay
-	 * @return {Manager} self or value
-	 * @api public
-	 */
-	
-	Manager.prototype.reconnectionDelay = function(v){
-	  if (!arguments.length) return this._reconnectionDelay;
-	  this._reconnectionDelay = v;
-	  this.backoff && this.backoff.setMin(v);
-	  return this;
-	};
-	
-	Manager.prototype.randomizationFactor = function(v){
-	  if (!arguments.length) return this._randomizationFactor;
-	  this._randomizationFactor = v;
-	  this.backoff && this.backoff.setJitter(v);
-	  return this;
-	};
-	
-	/**
-	 * Sets the maximum delay between reconnections.
-	 *
-	 * @param {Number} delay
-	 * @return {Manager} self or value
-	 * @api public
-	 */
-	
-	Manager.prototype.reconnectionDelayMax = function(v){
-	  if (!arguments.length) return this._reconnectionDelayMax;
-	  this._reconnectionDelayMax = v;
-	  this.backoff && this.backoff.setMax(v);
-	  return this;
-	};
-	
-	/**
-	 * Sets the connection timeout. `false` to disable
-	 *
-	 * @return {Manager} self or value
-	 * @api public
-	 */
-	
-	Manager.prototype.timeout = function(v){
-	  if (!arguments.length) return this._timeout;
-	  this._timeout = v;
-	  return this;
-	};
-	
-	/**
-	 * Starts trying to reconnect if reconnection is enabled and we have not
-	 * started reconnecting yet
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.maybeReconnectOnOpen = function() {
-	  // Only try to reconnect if it's the first time we're connecting
-	  if (!this.reconnecting && this._reconnection && this.backoff.attempts === 0) {
-	    // keeps reconnection from firing twice for the same reconnection loop
-	    this.reconnect();
-	  }
-	};
-	
-	
-	/**
-	 * Sets the current transport `socket`.
-	 *
-	 * @param {Function} optional, callback
-	 * @return {Manager} self
-	 * @api public
-	 */
-	
-	Manager.prototype.open =
-	Manager.prototype.connect = function(fn){
-	  debug('readyState %s', this.readyState);
-	  if (~this.readyState.indexOf('open')) return this;
-	
-	  debug('opening %s', this.uri);
-	  this.engine = eio(this.uri, this.opts);
-	  var socket = this.engine;
-	  var self = this;
-	  this.readyState = 'opening';
-	  this.skipReconnect = false;
-	
-	  // emit `open`
-	  var openSub = on(socket, 'open', function() {
-	    self.onopen();
-	    fn && fn();
-	  });
-	
-	  // emit `connect_error`
-	  var errorSub = on(socket, 'error', function(data){
-	    debug('connect_error');
-	    self.cleanup();
-	    self.readyState = 'closed';
-	    self.emitAll('connect_error', data);
-	    if (fn) {
-	      var err = new Error('Connection error');
-	      err.data = data;
-	      fn(err);
-	    } else {
-	      // Only do this if there is no fn to handle the error
-	      self.maybeReconnectOnOpen();
-	    }
-	  });
-	
-	  // emit `connect_timeout`
-	  if (false !== this._timeout) {
-	    var timeout = this._timeout;
-	    debug('connect attempt will timeout after %d', timeout);
-	
-	    // set timer
-	    var timer = setTimeout(function(){
-	      debug('connect attempt timed out after %d', timeout);
-	      openSub.destroy();
-	      socket.close();
-	      socket.emit('error', 'timeout');
-	      self.emitAll('connect_timeout', timeout);
-	    }, timeout);
-	
-	    this.subs.push({
-	      destroy: function(){
-	        clearTimeout(timer);
-	      }
-	    });
-	  }
-	
-	  this.subs.push(openSub);
-	  this.subs.push(errorSub);
-	
-	  return this;
-	};
-	
-	/**
-	 * Called upon transport open.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.onopen = function(){
-	  debug('open');
-	
-	  // clear old subs
-	  this.cleanup();
-	
-	  // mark as open
-	  this.readyState = 'open';
-	  this.emit('open');
-	
-	  // add new subs
-	  var socket = this.engine;
-	  this.subs.push(on(socket, 'data', bind(this, 'ondata')));
-	  this.subs.push(on(this.decoder, 'decoded', bind(this, 'ondecoded')));
-	  this.subs.push(on(socket, 'error', bind(this, 'onerror')));
-	  this.subs.push(on(socket, 'close', bind(this, 'onclose')));
-	};
-	
-	/**
-	 * Called with data.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.ondata = function(data){
-	  this.decoder.add(data);
-	};
-	
-	/**
-	 * Called when parser fully decodes a packet.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.ondecoded = function(packet) {
-	  this.emit('packet', packet);
-	};
-	
-	/**
-	 * Called upon socket error.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.onerror = function(err){
-	  debug('error', err);
-	  this.emitAll('error', err);
-	};
-	
-	/**
-	 * Creates a new socket for the given `nsp`.
-	 *
-	 * @return {Socket}
-	 * @api public
-	 */
-	
-	Manager.prototype.socket = function(nsp){
-	  var socket = this.nsps[nsp];
-	  if (!socket) {
-	    socket = new Socket(this, nsp);
-	    this.nsps[nsp] = socket;
-	    var self = this;
-	    socket.on('connect', function(){
-	      socket.id = self.engine.id;
-	      if (!~indexOf(self.connected, socket)) {
-	        self.connected.push(socket);
-	      }
-	    });
-	  }
-	  return socket;
-	};
-	
-	/**
-	 * Called upon a socket close.
-	 *
-	 * @param {Socket} socket
-	 */
-	
-	Manager.prototype.destroy = function(socket){
-	  var index = indexOf(this.connected, socket);
-	  if (~index) this.connected.splice(index, 1);
-	  if (this.connected.length) return;
-	
-	  this.close();
-	};
-	
-	/**
-	 * Writes a packet.
-	 *
-	 * @param {Object} packet
-	 * @api private
-	 */
-	
-	Manager.prototype.packet = function(packet){
-	  debug('writing packet %j', packet);
-	  var self = this;
-	
-	  if (!self.encoding) {
-	    // encode, then write to engine with result
-	    self.encoding = true;
-	    this.encoder.encode(packet, function(encodedPackets) {
-	      for (var i = 0; i < encodedPackets.length; i++) {
-	        self.engine.write(encodedPackets[i]);
-	      }
-	      self.encoding = false;
-	      self.processPacketQueue();
-	    });
-	  } else { // add packet to the queue
-	    self.packetBuffer.push(packet);
-	  }
-	};
-	
-	/**
-	 * If packet buffer is non-empty, begins encoding the
-	 * next packet in line.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.processPacketQueue = function() {
-	  if (this.packetBuffer.length > 0 && !this.encoding) {
-	    var pack = this.packetBuffer.shift();
-	    this.packet(pack);
-	  }
-	};
-	
-	/**
-	 * Clean up transport subscriptions and packet buffer.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.cleanup = function(){
-	  var sub;
-	  while (sub = this.subs.shift()) sub.destroy();
-	
-	  this.packetBuffer = [];
-	  this.encoding = false;
-	
-	  this.decoder.destroy();
-	};
-	
-	/**
-	 * Close the current socket.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.close =
-	Manager.prototype.disconnect = function(){
-	  this.skipReconnect = true;
-	  this.backoff.reset();
-	  this.readyState = 'closed';
-	  this.engine && this.engine.close();
-	};
-	
-	/**
-	 * Called upon engine close.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.onclose = function(reason){
-	  debug('close');
-	  this.cleanup();
-	  this.backoff.reset();
-	  this.readyState = 'closed';
-	  this.emit('close', reason);
-	  if (this._reconnection && !this.skipReconnect) {
-	    this.reconnect();
-	  }
-	};
-	
-	/**
-	 * Attempt a reconnection.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.reconnect = function(){
-	  if (this.reconnecting || this.skipReconnect) return this;
-	
-	  var self = this;
-	
-	  if (this.backoff.attempts >= this._reconnectionAttempts) {
-	    debug('reconnect failed');
-	    this.backoff.reset();
-	    this.emitAll('reconnect_failed');
-	    this.reconnecting = false;
-	  } else {
-	    var delay = this.backoff.duration();
-	    debug('will wait %dms before reconnect attempt', delay);
-	
-	    this.reconnecting = true;
-	    var timer = setTimeout(function(){
-	      if (self.skipReconnect) return;
-	
-	      debug('attempting reconnect');
-	      self.emitAll('reconnect_attempt', self.backoff.attempts);
-	      self.emitAll('reconnecting', self.backoff.attempts);
-	
-	      // check again for the case socket closed in above events
-	      if (self.skipReconnect) return;
-	
-	      self.open(function(err){
-	        if (err) {
-	          debug('reconnect attempt error');
-	          self.reconnecting = false;
-	          self.reconnect();
-	          self.emitAll('reconnect_error', err.data);
-	        } else {
-	          debug('reconnect success');
-	          self.onreconnect();
-	        }
-	      });
-	    }, delay);
-	
-	    this.subs.push({
-	      destroy: function(){
-	        clearTimeout(timer);
-	      }
-	    });
-	  }
-	};
-	
-	/**
-	 * Called upon successful reconnect.
-	 *
-	 * @api private
-	 */
-	
-	Manager.prototype.onreconnect = function(){
-	  var attempt = this.backoff.attempts;
-	  this.reconnecting = false;
-	  this.backoff.reset();
-	  this.updateSocketIds();
-	  this.emitAll('reconnect', attempt);
-	};
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * Module dependencies.
-	 */
-	
-	var parser = __webpack_require__(46);
-	var Emitter = __webpack_require__(50);
-	var toArray = __webpack_require__(51);
-	var on = __webpack_require__(45);
-	var bind = __webpack_require__(52);
-	var debug = __webpack_require__(47)('socket.io-client:socket');
-	var hasBin = __webpack_require__(55);
-	
-	/**
-	 * Module exports.
-	 */
-	
-	module.exports = exports = Socket;
-	
-	/**
-	 * Internal events (blacklisted).
-	 * These events can't be emitted by the user.
-	 *
-	 * @api private
-	 */
-	
-	var events = {
-	  connect: 1,
-	  connect_error: 1,
-	  connect_timeout: 1,
-	  disconnect: 1,
-	  error: 1,
-	  reconnect: 1,
-	  reconnect_attempt: 1,
-	  reconnect_failed: 1,
-	  reconnect_error: 1,
-	  reconnecting: 1
-	};
-	
-	/**
-	 * Shortcut to `Emitter#emit`.
-	 */
-	
-	var emit = Emitter.prototype.emit;
-	
-	/**
-	 * `Socket` constructor.
-	 *
-	 * @api public
-	 */
-	
-	function Socket(io, nsp){
-	  this.io = io;
-	  this.nsp = nsp;
-	  this.json = this; // compat
-	  this.ids = 0;
-	  this.acks = {};
-	  if (this.io.autoConnect) this.open();
-	  this.receiveBuffer = [];
-	  this.sendBuffer = [];
-	  this.connected = false;
-	  this.disconnected = true;
-	}
-	
-	/**
-	 * Mix in `Emitter`.
-	 */
-	
-	Emitter(Socket.prototype);
-	
-	/**
-	 * Subscribe to open, close and packet events
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.subEvents = function() {
-	  if (this.subs) return;
-	
-	  var io = this.io;
-	  this.subs = [
-	    on(io, 'open', bind(this, 'onopen')),
-	    on(io, 'packet', bind(this, 'onpacket')),
-	    on(io, 'close', bind(this, 'onclose'))
-	  ];
-	};
-	
-	/**
-	 * "Opens" the socket.
-	 *
-	 * @api public
-	 */
-	
-	Socket.prototype.open =
-	Socket.prototype.connect = function(){
-	  if (this.connected) return this;
-	
-	  this.subEvents();
-	  this.io.open(); // ensure open
-	  if ('open' == this.io.readyState) this.onopen();
-	  return this;
-	};
-	
-	/**
-	 * Sends a `message` event.
-	 *
-	 * @return {Socket} self
-	 * @api public
-	 */
-	
-	Socket.prototype.send = function(){
-	  var args = toArray(arguments);
-	  args.unshift('message');
-	  this.emit.apply(this, args);
-	  return this;
-	};
-	
-	/**
-	 * Override `emit`.
-	 * If the event is in `events`, it's emitted normally.
-	 *
-	 * @param {String} event name
-	 * @return {Socket} self
-	 * @api public
-	 */
-	
-	Socket.prototype.emit = function(ev){
-	  if (events.hasOwnProperty(ev)) {
-	    emit.apply(this, arguments);
-	    return this;
-	  }
-	
-	  var args = toArray(arguments);
-	  var parserType = parser.EVENT; // default
-	  if (hasBin(args)) { parserType = parser.BINARY_EVENT; } // binary
-	  var packet = { type: parserType, data: args };
-	
-	  // event ack callback
-	  if ('function' == typeof args[args.length - 1]) {
-	    debug('emitting packet with ack id %d', this.ids);
-	    this.acks[this.ids] = args.pop();
-	    packet.id = this.ids++;
-	  }
-	
-	  if (this.connected) {
-	    this.packet(packet);
-	  } else {
-	    this.sendBuffer.push(packet);
-	  }
-	
-	  return this;
-	};
-	
-	/**
-	 * Sends a packet.
-	 *
-	 * @param {Object} packet
-	 * @api private
-	 */
-	
-	Socket.prototype.packet = function(packet){
-	  packet.nsp = this.nsp;
-	  this.io.packet(packet);
-	};
-	
-	/**
-	 * Called upon engine `open`.
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.onopen = function(){
-	  debug('transport is open - connecting');
-	
-	  // write connect packet if necessary
-	  if ('/' != this.nsp) {
-	    this.packet({ type: parser.CONNECT });
-	  }
-	};
-	
-	/**
-	 * Called upon engine `close`.
-	 *
-	 * @param {String} reason
-	 * @api private
-	 */
-	
-	Socket.prototype.onclose = function(reason){
-	  debug('close (%s)', reason);
-	  this.connected = false;
-	  this.disconnected = true;
-	  delete this.id;
-	  this.emit('disconnect', reason);
-	};
-	
-	/**
-	 * Called with socket packet.
-	 *
-	 * @param {Object} packet
-	 * @api private
-	 */
-	
-	Socket.prototype.onpacket = function(packet){
-	  if (packet.nsp != this.nsp) return;
-	
-	  switch (packet.type) {
-	    case parser.CONNECT:
-	      this.onconnect();
-	      break;
-	
-	    case parser.EVENT:
-	      this.onevent(packet);
-	      break;
-	
-	    case parser.BINARY_EVENT:
-	      this.onevent(packet);
-	      break;
-	
-	    case parser.ACK:
-	      this.onack(packet);
-	      break;
-	
-	    case parser.BINARY_ACK:
-	      this.onack(packet);
-	      break;
-	
-	    case parser.DISCONNECT:
-	      this.ondisconnect();
-	      break;
-	
-	    case parser.ERROR:
-	      this.emit('error', packet.data);
-	      break;
-	  }
-	};
-	
-	/**
-	 * Called upon a server event.
-	 *
-	 * @param {Object} packet
-	 * @api private
-	 */
-	
-	Socket.prototype.onevent = function(packet){
-	  var args = packet.data || [];
-	  debug('emitting event %j', args);
-	
-	  if (null != packet.id) {
-	    debug('attaching ack callback to event');
-	    args.push(this.ack(packet.id));
-	  }
-	
-	  if (this.connected) {
-	    emit.apply(this, args);
-	  } else {
-	    this.receiveBuffer.push(args);
-	  }
-	};
-	
-	/**
-	 * Produces an ack callback to emit with an event.
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.ack = function(id){
-	  var self = this;
-	  var sent = false;
-	  return function(){
-	    // prevent double callbacks
-	    if (sent) return;
-	    sent = true;
-	    var args = toArray(arguments);
-	    debug('sending ack %j', args);
-	
-	    var type = hasBin(args) ? parser.BINARY_ACK : parser.ACK;
-	    self.packet({
-	      type: type,
-	      id: id,
-	      data: args
-	    });
-	  };
-	};
-	
-	/**
-	 * Called upon a server acknowlegement.
-	 *
-	 * @param {Object} packet
-	 * @api private
-	 */
-	
-	Socket.prototype.onack = function(packet){
-	  debug('calling ack %s with %j', packet.id, packet.data);
-	  var fn = this.acks[packet.id];
-	  fn.apply(this, packet.data);
-	  delete this.acks[packet.id];
-	};
-	
-	/**
-	 * Called upon server connect.
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.onconnect = function(){
-	  this.connected = true;
-	  this.disconnected = false;
-	  this.emit('connect');
-	  this.emitBuffered();
-	};
-	
-	/**
-	 * Emit buffered events (received and emitted).
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.emitBuffered = function(){
-	  var i;
-	  for (i = 0; i < this.receiveBuffer.length; i++) {
-	    emit.apply(this, this.receiveBuffer[i]);
-	  }
-	  this.receiveBuffer = [];
-	
-	  for (i = 0; i < this.sendBuffer.length; i++) {
-	    this.packet(this.sendBuffer[i]);
-	  }
-	  this.sendBuffer = [];
-	};
-	
-	/**
-	 * Called upon server disconnect.
-	 *
-	 * @api private
-	 */
-	
-	Socket.prototype.ondisconnect = function(){
-	  debug('server disconnect (%s)', this.nsp);
-	  this.destroy();
-	  this.onclose('io server disconnect');
-	};
-	
-	/**
-	 * Called upon forced client/server side disconnections,
-	 * this method ensures the manager stops tracking us and
-	 * that reconnections don't get triggered for this.
-	 *
-	 * @api private.
-	 */
-	
-	Socket.prototype.destroy = function(){
-	  if (this.subs) {
-	    // clean subscriptions to avoid reconnections
-	    for (var i = 0; i < this.subs.length; i++) {
-	      this.subs[i].destroy();
-	    }
-	    this.subs = null;
-	  }
-	
-	  this.io.destroy(this);
-	};
-	
-	/**
-	 * Disconnects the socket manually.
-	 *
-	 * @return {Socket} self
-	 * @api public
-	 */
-	
-	Socket.prototype.close =
-	Socket.prototype.disconnect = function(){
-	  if (this.connected) {
-	    debug('performing disconnect (%s)', this.nsp);
-	    this.packet({ type: parser.DISCONNECT });
-	  }
-	
-	  // remove socket from pool
-	  this.destroy();
-	
-	  if (this.connected) {
-	    // fire events
-	    this.onclose('io client disconnect');
-	  }
-	  return this;
-	};
-
-
-/***/ },
 /* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * Module exports.
-	 */
-	
-	module.exports = on;
-	
-	/**
-	 * Helper for subscriptions.
-	 *
-	 * @param {Object|EventEmitter} obj with `Emitter` mixin or `EventEmitter`
-	 * @param {String} event name
-	 * @param {Function} callback
-	 * @api public
-	 */
-	
-	function on(obj, ev, fn) {
-	  obj.on(ev, fn);
-	  return {
-	    destroy: function(){
-	      obj.removeListener(ev, fn);
-	    }
-	  };
-	}
-
-
-/***/ },
-/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -19557,11 +19187,11 @@
 	 */
 	
 	var debug = __webpack_require__(47)('socket.io-parser');
-	var json = __webpack_require__(62);
-	var isArray = __webpack_require__(61);
+	var json = __webpack_require__(64);
+	var isArray = __webpack_require__(63);
 	var Emitter = __webpack_require__(50);
-	var binary = __webpack_require__(58);
-	var isBuf = __webpack_require__(59);
+	var binary = __webpack_require__(59);
+	var isBuf = __webpack_require__(60);
 	
 	/**
 	 * Protocol version.
@@ -19954,6 +19584,99 @@
 
 
 /***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @name Callback
+	 * @namespace
+	 * @classdesc Miscellaneous callback util functions.
+	 */
+	var Util = __webpack_require__(38);
+	
+	module.exports = {
+	
+	  /** Create callback used to set binding value on an event.
+	   * @param {Binding} binding binding
+	   * @param {String|Array} [subpath] subpath as a dot-separated string or an array of strings and numbers
+	   * @param {Function} [f] value transformer
+	   * @returns {Function} callback
+	   * @memberOf Callback */
+	  set: function (binding, subpath, f) {
+	    var args = Util.resolveArgs(
+	      arguments,
+	      'binding', function (x) { return Util.canRepresentSubpath(x) ? 'subpath' : null; }, '?f'
+	    );
+	
+	    return function (event) {
+	      var value = event.target.value;
+	      binding.set(args.subpath, args.f ? args.f(value) : value);
+	    };
+	  },
+	
+	  /** Create callback used to delete binding value on an event.
+	   * @param {Binding} binding binding
+	   * @param {String|String[]} [subpath] subpath as a dot-separated string or an array of strings and numbers
+	   * @param {Function} [pred] predicate
+	   * @returns {Function} callback
+	   * @memberOf Callback */
+	  remove: function (binding, subpath, pred) {
+	    var args = Util.resolveArgs(
+	      arguments,
+	      'binding', function (x) { return Util.canRepresentSubpath(x) ? 'subpath' : null; }, '?pred'
+	    );
+	
+	    return function (event) {
+	      var value = event.target.value;
+	      if (!args.pred || args.pred(value)) {
+	        binding.remove(args.subpath);
+	      }
+	    };
+	  },
+	
+	  /** Create callback invoked when specified key combination is pressed.
+	   * @param {Function} cb callback
+	   * @param {String|Array} key key
+	   * @param {Boolean} [shiftKey] shift key flag
+	   * @param {Boolean} [ctrlKey] ctrl key flag
+	   * @returns {Function} callback
+	   * @memberOf Callback */
+	  onKey: function (cb, key, shiftKey, ctrlKey) {
+	    var effectiveShiftKey = shiftKey || false;
+	    var effectiveCtrlKey = ctrlKey || false;
+	    return function (event) {
+	      var keyMatched = typeof key === 'string' ?
+	        event.key === key :
+	        Util.find(key, function (k) { return k === event.key; });
+	
+	      if (keyMatched && event.shiftKey === effectiveShiftKey && event.ctrlKey === effectiveCtrlKey) {
+	        cb(event);
+	      }
+	    };
+	  },
+	
+	  /** Create callback invoked when enter key is pressed.
+	   * @param {Function} cb callback
+	   * @returns {Function} callback
+	   * @memberOf Callback */
+	  onEnter: function (cb) {
+	    return this.onKey(cb, 'Enter');
+	  },
+	
+	  /** Create callback invoked when escape key is pressed.
+	   * @param {Function} cb callback
+	   * @returns {Function} callback
+	   * @memberOf Callback */
+	  onEscape: function (cb) {
+	    return this.onKey(cb, 'Escape');
+	  }
+	
+	};
+	
+	module.exports['delete'] = module.exports.remove;
+
+
+/***/ },
 /* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -20100,14 +19823,6 @@
 /* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(__webpack_amd_options__) {module.exports = __webpack_amd_options__;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, {}))
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/**
 	 * Parses an URI
 	 *
@@ -20133,6 +19848,14 @@
 	
 	  return uri;
 	};
+
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	module.exports =  __webpack_require__(62);
 
 
 /***/ },
@@ -20309,25 +20032,6 @@
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = toArray
-	
-	function toArray(list, index) {
-	    var array = []
-	
-	    index = index || 0
-	
-	    for (var i = index || 0; i < list.length; i++) {
-	        array[i - index] = list[i]
-	    }
-	
-	    return array
-	}
-
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/**
 	 * Slice reference.
 	 */
@@ -20354,15 +20058,7 @@
 
 
 /***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	module.exports =  __webpack_require__(60);
-
-
-/***/ },
-/* 54 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -20451,87 +20147,7 @@
 	};
 
 /***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {
-	/*
-	 * Module requirements.
-	 */
-	
-	var isArray = __webpack_require__(63);
-	
-	/**
-	 * Module exports.
-	 */
-	
-	module.exports = hasBinary;
-	
-	/**
-	 * Checks for binary data.
-	 *
-	 * Right now only Buffer and ArrayBuffer are supported..
-	 *
-	 * @param {Object} anything
-	 * @api public
-	 */
-	
-	function hasBinary(data) {
-	
-	  function _hasBinary(obj) {
-	    if (!obj) return false;
-	
-	    if ( (global.Buffer && global.Buffer.isBuffer(obj)) ||
-	         (global.ArrayBuffer && obj instanceof ArrayBuffer) ||
-	         (global.Blob && obj instanceof Blob) ||
-	         (global.File && obj instanceof File)
-	        ) {
-	      return true;
-	    }
-	
-	    if (isArray(obj)) {
-	      for (var i = 0; i < obj.length; i++) {
-	          if (_hasBinary(obj[i])) {
-	              return true;
-	          }
-	      }
-	    } else if (obj && 'object' == typeof obj) {
-	      if (obj.toJSON) {
-	        obj = obj.toJSON();
-	      }
-	
-	      for (var key in obj) {
-	        if (Object.prototype.hasOwnProperty.call(obj, key) && _hasBinary(obj[key])) {
-	          return true;
-	        }
-	      }
-	    }
-	
-	    return false;
-	  }
-	
-	  return _hasBinary(data);
-	}
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	var indexOf = [].indexOf;
-	
-	module.exports = function(arr, obj){
-	  if (indexOf) return arr.indexOf(obj);
-	  for (var i = 0; i < arr.length; ++i) {
-	    if (arr[i] === obj) return i;
-	  }
-	  return -1;
-	};
-
-/***/ },
-/* 57 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -20622,7 +20238,404 @@
 
 
 /***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	var indexOf = [].indexOf;
+	
+	module.exports = function(arr, obj){
+	  if (indexOf) return arr.indexOf(obj);
+	  for (var i = 0; i < arr.length; ++i) {
+	    if (arr[i] === obj) return i;
+	  }
+	  return -1;
+	};
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = toArray
+	
+	function toArray(list, index) {
+	    var array = []
+	
+	    index = index || 0
+	
+	    for (var i = index || 0; i < list.length; i++) {
+	        array[i - index] = list[i]
+	    }
+	
+	    return array
+	}
+
+
+/***/ },
+/* 56 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {
+	/*
+	 * Module requirements.
+	 */
+	
+	var isArray = __webpack_require__(65);
+	
+	/**
+	 * Module exports.
+	 */
+	
+	module.exports = hasBinary;
+	
+	/**
+	 * Checks for binary data.
+	 *
+	 * Right now only Buffer and ArrayBuffer are supported..
+	 *
+	 * @param {Object} anything
+	 * @api public
+	 */
+	
+	function hasBinary(data) {
+	
+	  function _hasBinary(obj) {
+	    if (!obj) return false;
+	
+	    if ( (global.Buffer && global.Buffer.isBuffer(obj)) ||
+	         (global.ArrayBuffer && obj instanceof ArrayBuffer) ||
+	         (global.Blob && obj instanceof Blob) ||
+	         (global.File && obj instanceof File)
+	        ) {
+	      return true;
+	    }
+	
+	    if (isArray(obj)) {
+	      for (var i = 0; i < obj.length; i++) {
+	          if (_hasBinary(obj[i])) {
+	              return true;
+	          }
+	      }
+	    } else if (obj && 'object' == typeof obj) {
+	      if (obj.toJSON) {
+	        obj = obj.toJSON();
+	      }
+	
+	      for (var key in obj) {
+	        if (Object.prototype.hasOwnProperty.call(obj, key) && _hasBinary(obj[key])) {
+	          return true;
+	        }
+	      }
+	    }
+	
+	    return false;
+	  }
+	
+	  return _hasBinary(data);
+	}
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 57 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/** Changes descriptor constructor.
+	 * @param {Array} path absolute changed path
+	 * @param {Array} listenerPath absolute listener path
+	 * @param {Boolean} valueChanged value changed flag
+	 * @param {Immutable.Map} previousValue previous backing value
+	 * @param {Immutable.Map} previousMeta previous meta binding backing value
+	 * @public
+	 * @class ChangesDescriptor
+	 * @classdesc Encapsulates binding changes for binding listeners. */
+	var ChangesDescriptor =
+	  function (path, listenerPath, valueChanged, previousValue, previousMeta) {
+	    /** @private */
+	    this._path = path;
+	    /** @private */
+	    this._listenerPath = listenerPath;
+	    /** @private */
+	    this._valueChanged = valueChanged;
+	    /** @private */
+	    this._previousValue = previousValue;
+	    /** @private */
+	    this._previousMeta = previousMeta;
+	  };
+	
+	ChangesDescriptor.prototype = Object.freeze( /** @lends ChangesDescriptor.prototype */ {
+	  /** Get changed path relative to binding's path listener was installed on.
+	   * @return {Array} changed path */
+	  getPath: function () {
+	    var listenerPathLen = this._listenerPath.length;
+	    return listenerPathLen === this._path.length ? [] : this._path.slice(listenerPathLen);
+	  },
+	
+	  /** Check if binding's value was changed.
+	   * @returns {Boolean} */
+	  isValueChanged: function () {
+	    return this._valueChanged;
+	  },
+	
+	  /** Check if meta binding's value was changed.
+	   * @returns {Boolean} */
+	  isMetaChanged: function () {
+	    return !!this._previousMeta;
+	  },
+	
+	  /** Get previous value at listening path.
+	   * @returns {*} previous value at listening path or null if not changed */
+	  getPreviousValue: function () {
+	    return this._previousValue && this._previousValue.getIn(this._listenerPath);
+	  },
+	
+	  /** Get previous meta at listening path.
+	   * @returns {*} */
+	  getPreviousMeta: function () {
+	    return this._previousMeta && this._previousMeta.getIn(this._listenerPath);
+	  }
+	});
+	
+	module.exports = ChangesDescriptor;
+
+
+/***/ },
 /* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	/**
+	 * Representation of a single EventEmitter function.
+	 *
+	 * @param {Function} fn Event handler to be called.
+	 * @param {Mixed} context Context for function execution.
+	 * @param {Boolean} once Only emit once
+	 * @api private
+	 */
+	function EE(fn, context, once) {
+	  this.fn = fn;
+	  this.context = context;
+	  this.once = once || false;
+	}
+	
+	/**
+	 * Minimal EventEmitter interface that is molded against the Node.js
+	 * EventEmitter interface.
+	 *
+	 * @constructor
+	 * @api public
+	 */
+	function EventEmitter() { /* Nothing to set */ }
+	
+	/**
+	 * Holds the assigned EventEmitters by name.
+	 *
+	 * @type {Object}
+	 * @private
+	 */
+	EventEmitter.prototype._events = undefined;
+	
+	/**
+	 * Return a list of assigned event listeners.
+	 *
+	 * @param {String} event The events that should be listed.
+	 * @returns {Array}
+	 * @api public
+	 */
+	EventEmitter.prototype.listeners = function listeners(event) {
+	  if (!this._events || !this._events[event]) return [];
+	  if (this._events[event].fn) return [this._events[event].fn];
+	
+	  for (var i = 0, l = this._events[event].length, ee = new Array(l); i < l; i++) {
+	    ee[i] = this._events[event][i].fn;
+	  }
+	
+	  return ee;
+	};
+	
+	/**
+	 * Emit an event to all registered event listeners.
+	 *
+	 * @param {String} event The name of the event.
+	 * @returns {Boolean} Indication if we've emitted an event.
+	 * @api public
+	 */
+	EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
+	  if (!this._events || !this._events[event]) return false;
+	
+	  var listeners = this._events[event]
+	    , len = arguments.length
+	    , args
+	    , i;
+	
+	  if ('function' === typeof listeners.fn) {
+	    if (listeners.once) this.removeListener(event, listeners.fn, true);
+	
+	    switch (len) {
+	      case 1: return listeners.fn.call(listeners.context), true;
+	      case 2: return listeners.fn.call(listeners.context, a1), true;
+	      case 3: return listeners.fn.call(listeners.context, a1, a2), true;
+	      case 4: return listeners.fn.call(listeners.context, a1, a2, a3), true;
+	      case 5: return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
+	      case 6: return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
+	    }
+	
+	    for (i = 1, args = new Array(len -1); i < len; i++) {
+	      args[i - 1] = arguments[i];
+	    }
+	
+	    listeners.fn.apply(listeners.context, args);
+	  } else {
+	    var length = listeners.length
+	      , j;
+	
+	    for (i = 0; i < length; i++) {
+	      if (listeners[i].once) this.removeListener(event, listeners[i].fn, true);
+	
+	      switch (len) {
+	        case 1: listeners[i].fn.call(listeners[i].context); break;
+	        case 2: listeners[i].fn.call(listeners[i].context, a1); break;
+	        case 3: listeners[i].fn.call(listeners[i].context, a1, a2); break;
+	        default:
+	          if (!args) for (j = 1, args = new Array(len -1); j < len; j++) {
+	            args[j - 1] = arguments[j];
+	          }
+	
+	          listeners[i].fn.apply(listeners[i].context, args);
+	      }
+	    }
+	  }
+	
+	  return true;
+	};
+	
+	/**
+	 * Register a new EventListener for the given event.
+	 *
+	 * @param {String} event Name of the event.
+	 * @param {Functon} fn Callback function.
+	 * @param {Mixed} context The context of the function.
+	 * @api public
+	 */
+	EventEmitter.prototype.on = function on(event, fn, context) {
+	  var listener = new EE(fn, context || this);
+	
+	  if (!this._events) this._events = {};
+	  if (!this._events[event]) this._events[event] = listener;
+	  else {
+	    if (!this._events[event].fn) this._events[event].push(listener);
+	    else this._events[event] = [
+	      this._events[event], listener
+	    ];
+	  }
+	
+	  return this;
+	};
+	
+	/**
+	 * Add an EventListener that's only called once.
+	 *
+	 * @param {String} event Name of the event.
+	 * @param {Function} fn Callback function.
+	 * @param {Mixed} context The context of the function.
+	 * @api public
+	 */
+	EventEmitter.prototype.once = function once(event, fn, context) {
+	  var listener = new EE(fn, context || this, true);
+	
+	  if (!this._events) this._events = {};
+	  if (!this._events[event]) this._events[event] = listener;
+	  else {
+	    if (!this._events[event].fn) this._events[event].push(listener);
+	    else this._events[event] = [
+	      this._events[event], listener
+	    ];
+	  }
+	
+	  return this;
+	};
+	
+	/**
+	 * Remove event listeners.
+	 *
+	 * @param {String} event The event we want to remove.
+	 * @param {Function} fn The listener that we need to find.
+	 * @param {Boolean} once Only remove once listeners.
+	 * @api public
+	 */
+	EventEmitter.prototype.removeListener = function removeListener(event, fn, once) {
+	  if (!this._events || !this._events[event]) return this;
+	
+	  var listeners = this._events[event]
+	    , events = [];
+	
+	  if (fn) {
+	    if (listeners.fn && (listeners.fn !== fn || (once && !listeners.once))) {
+	      events.push(listeners);
+	    }
+	    if (!listeners.fn) for (var i = 0, length = listeners.length; i < length; i++) {
+	      if (listeners[i].fn !== fn || (once && !listeners[i].once)) {
+	        events.push(listeners[i]);
+	      }
+	    }
+	  }
+	
+	  //
+	  // Reset the array, or remove it completely if we have no more listeners.
+	  //
+	  if (events.length) {
+	    this._events[event] = events.length === 1 ? events[0] : events;
+	  } else {
+	    delete this._events[event];
+	  }
+	
+	  return this;
+	};
+	
+	/**
+	 * Remove all listeners or only the listeners for the specified event.
+	 *
+	 * @param {String} event The event want to remove all listeners for.
+	 * @api public
+	 */
+	EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
+	  if (!this._events) return this;
+	
+	  if (event) delete this._events[event];
+	  else this._events = {};
+	
+	  return this;
+	};
+	
+	//
+	// Alias methods names because people roll like that.
+	//
+	EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+	EventEmitter.prototype.addListener = EventEmitter.prototype.on;
+	
+	//
+	// This function doesn't apply anymore.
+	//
+	EventEmitter.prototype.setMaxListeners = function setMaxListeners() {
+	  return this;
+	};
+	
+	//
+	// Expose the module.
+	//
+	EventEmitter.EventEmitter = EventEmitter;
+	EventEmitter.EventEmitter2 = EventEmitter;
+	EventEmitter.EventEmitter3 = EventEmitter;
+	
+	//
+	// Expose the module.
+	//
+	module.exports = EventEmitter;
+
+
+/***/ },
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/*global Blob,File*/
@@ -20631,8 +20644,8 @@
 	 * Module requirements
 	 */
 	
-	var isArray = __webpack_require__(61);
-	var isBuf = __webpack_require__(59);
+	var isArray = __webpack_require__(63);
+	var isBuf = __webpack_require__(60);
 	
 	/**
 	 * Replaces every Buffer | ArrayBuffer in packet with a numbered placeholder.
@@ -20770,7 +20783,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {
@@ -20790,11 +20803,23 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 60 */
+/* 61 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global) {/*! Native Promise Only
+	    v0.7.6-a (c) Kyle Simpson
+	    MIT License: http://getify.mit-license.org
+	*/
+	!function(t,n,e){n[t]=n[t]||e(),"undefined"!=typeof module&&module.exports?module.exports=n[t]:"function"=="function"&&__webpack_require__(67)&&!(__WEBPACK_AMD_DEFINE_RESULT__ = function(){return n[t]}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))}("Promise","undefined"!=typeof global?global:this,function(){"use strict";function t(t,n){l.add(t,n),h||(h=y(l.drain))}function n(t){var n,e=typeof t;return null==t||"object"!=e&&"function"!=e||(n=t.then),"function"==typeof n?n:!1}function e(){for(var t=0;t<this.chain.length;t++)o(this,1===this.state?this.chain[t].success:this.chain[t].failure,this.chain[t]);this.chain.length=0}function o(t,e,o){var r,i;try{e===!1?o.reject(t.msg):(r=e===!0?t.msg:e.call(void 0,t.msg),r===o.promise?o.reject(TypeError("Promise-chain cycle")):(i=n(r))?i.call(r,o.resolve,o.reject):o.resolve(r))}catch(c){o.reject(c)}}function r(o){var c,u,a=this;if(!a.triggered){a.triggered=!0,a.def&&(a=a.def);try{(c=n(o))?(u=new f(a),c.call(o,function(){r.apply(u,arguments)},function(){i.apply(u,arguments)})):(a.msg=o,a.state=1,a.chain.length>0&&t(e,a))}catch(s){i.call(u||new f(a),s)}}}function i(n){var o=this;o.triggered||(o.triggered=!0,o.def&&(o=o.def),o.msg=n,o.state=2,o.chain.length>0&&t(e,o))}function c(t,n,e,o){for(var r=0;r<n.length;r++)!function(r){t.resolve(n[r]).then(function(t){e(r,t)},o)}(r)}function f(t){this.def=t,this.triggered=!1}function u(t){this.promise=t,this.state=0,this.triggered=!1,this.chain=[],this.msg=void 0}function a(n){if("function"!=typeof n)throw TypeError("Not a function");if(0!==this.__NPO__)throw TypeError("Not a promise");this.__NPO__=1;var o=new u(this);this.then=function(n,r){var i={success:"function"==typeof n?n:!0,failure:"function"==typeof r?r:!1};return i.promise=new this.constructor(function(t,n){if("function"!=typeof t||"function"!=typeof n)throw TypeError("Not a function");i.resolve=t,i.reject=n}),o.chain.push(i),0!==o.state&&t(e,o),i.promise},this["catch"]=function(t){return this.then(void 0,t)};try{n.call(void 0,function(t){r.call(o,t)},function(t){i.call(o,t)})}catch(c){i.call(o,c)}}var s,h,l,p=Object.prototype.toString,y="undefined"!=typeof setImmediate?function(t){return setImmediate(t)}:setTimeout;try{Object.defineProperty({},"x",{}),s=function(t,n,e,o){return Object.defineProperty(t,n,{value:e,writable:!0,configurable:o!==!1})}}catch(d){s=function(t,n,e){return t[n]=e,t}}l=function(){function t(t,n){this.fn=t,this.self=n,this.next=void 0}var n,e,o;return{add:function(r,i){o=new t(r,i),e?e.next=o:n=o,e=o,o=void 0},drain:function(){var t=n;for(n=e=h=void 0;t;)t.fn.call(t.self),t=t.next}}}();var g=s({},"constructor",a,!1);return s(a,"prototype",g,!1),s(g,"__NPO__",0,!1),s(a,"resolve",function(t){var n=this;return t&&"object"==typeof t&&1===t.__NPO__?t:new n(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");n(t)})}),s(a,"reject",function(t){return new this(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");e(t)})}),s(a,"all",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):0===t.length?n.resolve([]):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");var r=t.length,i=Array(r),f=0;c(n,t,function(t,n){i[t]=n,++f===r&&e(i)},o)})}),s(a,"race",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");c(n,t,function(t,n){e(n)},o)})}),a});
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	module.exports = __webpack_require__(64);
+	module.exports = __webpack_require__(66);
 	
 	/**
 	 * Exports parser
@@ -20802,11 +20827,11 @@
 	 * @api public
 	 *
 	 */
-	module.exports.parser = __webpack_require__(67);
+	module.exports.parser = __webpack_require__(70);
 
 
 /***/ },
-/* 61 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -20815,7 +20840,7 @@
 
 
 /***/ },
-/* 62 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/*! JSON v3.2.6 | http://bestiejs.github.io/json3 | Copyright 2012-2013, Kit Cambridge | http://kit.mit-license.org */
@@ -20825,7 +20850,7 @@
 	
 	  // Detect the `define` function exposed by asynchronous module loaders. The
 	  // strict `define` check is necessary for compatibility with `r.js`.
-	  var isLoader = "function" === "function" && __webpack_require__(48);
+	  var isLoader = "function" === "function" && __webpack_require__(67);
 	
 	  // Detect native implementations.
 	  var nativeJSON = typeof JSON == "object" && JSON;
@@ -21682,7 +21707,7 @@
 
 
 /***/ },
-/* 63 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -21691,21 +21716,21 @@
 
 
 /***/ },
-/* 64 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
 	 * Module dependencies.
 	 */
 	
-	var transports = __webpack_require__(66);
+	var transports = __webpack_require__(69);
 	var Emitter = __webpack_require__(50);
-	var debug = __webpack_require__(71)('engine.io-client:socket');
-	var index = __webpack_require__(56);
-	var parser = __webpack_require__(67);
-	var parseuri = __webpack_require__(68);
-	var parsejson = __webpack_require__(69);
-	var parseqs = __webpack_require__(70);
+	var debug = __webpack_require__(74)('engine.io-client:socket');
+	var index = __webpack_require__(54);
+	var parser = __webpack_require__(70);
+	var parseuri = __webpack_require__(71);
+	var parsejson = __webpack_require__(73);
+	var parseqs = __webpack_require__(72);
 	
 	/**
 	 * Module exports.
@@ -21820,9 +21845,9 @@
 	 */
 	
 	Socket.Socket = Socket;
-	Socket.Transport = __webpack_require__(65);
-	Socket.transports = __webpack_require__(66);
-	Socket.parser = __webpack_require__(67);
+	Socket.Transport = __webpack_require__(68);
+	Socket.transports = __webpack_require__(69);
+	Socket.parser = __webpack_require__(70);
 	
 	/**
 	 * Creates transport of the given type.
@@ -22403,14 +22428,22 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 65 */
+/* 67 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(__webpack_amd_options__) {module.exports = __webpack_amd_options__;
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, {}))
+
+/***/ },
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 	
-	var parser = __webpack_require__(67);
+	var parser = __webpack_require__(70);
 	var Emitter = __webpack_require__(50);
 	
 	/**
@@ -22568,17 +22601,17 @@
 
 
 /***/ },
-/* 66 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
 	 * Module dependencies
 	 */
 	
-	var XMLHttpRequest = __webpack_require__(72);
-	var XHR = __webpack_require__(73);
-	var JSONP = __webpack_require__(74);
-	var websocket = __webpack_require__(75);
+	var XMLHttpRequest = __webpack_require__(75);
+	var XHR = __webpack_require__(76);
+	var JSONP = __webpack_require__(77);
+	var websocket = __webpack_require__(78);
 	
 	/**
 	 * Export transports.
@@ -22628,19 +22661,19 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 67 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
 	 * Module dependencies.
 	 */
 	
-	var keys = __webpack_require__(76);
-	var hasBinary = __webpack_require__(79);
-	var sliceBuffer = __webpack_require__(80);
-	var base64encoder = __webpack_require__(84);
-	var after = __webpack_require__(81);
-	var utf8 = __webpack_require__(83);
+	var keys = __webpack_require__(79);
+	var hasBinary = __webpack_require__(82);
+	var sliceBuffer = __webpack_require__(83);
+	var base64encoder = __webpack_require__(87);
+	var after = __webpack_require__(84);
+	var utf8 = __webpack_require__(86);
 	
 	/**
 	 * Check if we are running an android browser. That requires us to use
@@ -22697,7 +22730,7 @@
 	 * Create a blob api even for blob builder when vendor prefixes exist
 	 */
 	
-	var Blob = __webpack_require__(82);
+	var Blob = __webpack_require__(85);
 	
 	/**
 	 * Encodes a packet.
@@ -23229,7 +23262,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 68 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -23274,45 +23307,7 @@
 
 
 /***/ },
-/* 69 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * JSON parse.
-	 *
-	 * @see Based on jQuery#parseJSON (MIT) and JSON2
-	 * @api private
-	 */
-	
-	var rvalidchars = /^[\],:{}\s]*$/;
-	var rvalidescape = /\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
-	var rvalidtokens = /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;
-	var rvalidbraces = /(?:^|:|,)(?:\s*\[)+/g;
-	var rtrimLeft = /^\s+/;
-	var rtrimRight = /\s+$/;
-	
-	module.exports = function parsejson(data) {
-	  if ('string' != typeof data || !data) {
-	    return null;
-	  }
-	
-	  data = data.replace(rtrimLeft, '').replace(rtrimRight, '');
-	
-	  // Attempt to parse using the native JSON parser first
-	  if (global.JSON && JSON.parse) {
-	    return JSON.parse(data);
-	  }
-	
-	  if (rvalidchars.test(data.replace(rvalidescape, '@')
-	      .replace(rvalidtokens, ']')
-	      .replace(rvalidbraces, ''))) {
-	    return (new Function('return ' + data))();
-	  }
-	};
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 70 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -23355,7 +23350,45 @@
 
 
 /***/ },
-/* 71 */
+/* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * JSON parse.
+	 *
+	 * @see Based on jQuery#parseJSON (MIT) and JSON2
+	 * @api private
+	 */
+	
+	var rvalidchars = /^[\],:{}\s]*$/;
+	var rvalidescape = /\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+	var rvalidtokens = /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;
+	var rvalidbraces = /(?:^|:|,)(?:\s*\[)+/g;
+	var rtrimLeft = /^\s+/;
+	var rtrimRight = /\s+$/;
+	
+	module.exports = function parsejson(data) {
+	  if ('string' != typeof data || !data) {
+	    return null;
+	  }
+	
+	  data = data.replace(rtrimLeft, '').replace(rtrimRight, '');
+	
+	  // Attempt to parse using the native JSON parser first
+	  if (global.JSON && JSON.parse) {
+	    return JSON.parse(data);
+	  }
+	
+	  if (rvalidchars.test(data.replace(rvalidescape, '@')
+	      .replace(rvalidtokens, ']')
+	      .replace(rvalidbraces, ''))) {
+	    return (new Function('return ' + data))();
+	  }
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -23365,7 +23398,7 @@
 	 * Expose `debug()` as the module.
 	 */
 	
-	exports = module.exports = __webpack_require__(77);
+	exports = module.exports = __webpack_require__(80);
 	exports.log = log;
 	exports.formatArgs = formatArgs;
 	exports.save = save;
@@ -23508,11 +23541,11 @@
 
 
 /***/ },
-/* 72 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// browser shim for xmlhttprequest module
-	var hasCORS = __webpack_require__(86);
+	var hasCORS = __webpack_require__(88);
 	
 	module.exports = function(opts) {
 	  var xdomain = opts.xdomain;
@@ -23550,18 +23583,18 @@
 
 
 /***/ },
-/* 73 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
 	 * Module requirements.
 	 */
 	
-	var XMLHttpRequest = __webpack_require__(72);
-	var Polling = __webpack_require__(78);
+	var XMLHttpRequest = __webpack_require__(75);
+	var Polling = __webpack_require__(81);
 	var Emitter = __webpack_require__(50);
-	var inherit = __webpack_require__(85);
-	var debug = __webpack_require__(71)('engine.io-client:polling-xhr');
+	var inherit = __webpack_require__(89);
+	var debug = __webpack_require__(74)('engine.io-client:polling-xhr');
 	
 	/**
 	 * Module exports.
@@ -23941,7 +23974,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 74 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {
@@ -23949,8 +23982,8 @@
 	 * Module requirements.
 	 */
 	
-	var Polling = __webpack_require__(78);
-	var inherit = __webpack_require__(85);
+	var Polling = __webpack_require__(81);
+	var inherit = __webpack_require__(89);
 	
 	/**
 	 * Module exports.
@@ -24181,18 +24214,18 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 75 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 	
-	var Transport = __webpack_require__(65);
-	var parser = __webpack_require__(67);
-	var parseqs = __webpack_require__(70);
-	var inherit = __webpack_require__(85);
-	var debug = __webpack_require__(71)('engine.io-client:websocket');
+	var Transport = __webpack_require__(68);
+	var parser = __webpack_require__(70);
+	var parseqs = __webpack_require__(72);
+	var inherit = __webpack_require__(89);
+	var debug = __webpack_require__(74)('engine.io-client:websocket');
 	
 	/**
 	 * `ws` exposes a WebSocket-compatible interface in
@@ -24200,7 +24233,7 @@
 	 * in the browser.
 	 */
 	
-	var WebSocket = __webpack_require__(87);
+	var WebSocket = __webpack_require__(90);
 	
 	/**
 	 * Module exports.
@@ -24425,7 +24458,7 @@
 
 
 /***/ },
-/* 76 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24450,7 +24483,7 @@
 
 
 /***/ },
-/* 77 */
+/* 80 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24466,7 +24499,7 @@
 	exports.disable = disable;
 	exports.enable = enable;
 	exports.enabled = enabled;
-	exports.humanize = __webpack_require__(89);
+	exports.humanize = __webpack_require__(92);
 	
 	/**
 	 * The currently active debug mode names, and names to skip.
@@ -24653,18 +24686,18 @@
 
 
 /***/ },
-/* 78 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 	
-	var Transport = __webpack_require__(65);
-	var parseqs = __webpack_require__(70);
-	var parser = __webpack_require__(67);
-	var inherit = __webpack_require__(85);
-	var debug = __webpack_require__(71)('engine.io-client:polling');
+	var Transport = __webpack_require__(68);
+	var parseqs = __webpack_require__(72);
+	var parser = __webpack_require__(70);
+	var inherit = __webpack_require__(89);
+	var debug = __webpack_require__(74)('engine.io-client:polling');
 	
 	/**
 	 * Module exports.
@@ -24677,7 +24710,7 @@
 	 */
 	
 	var hasXHR2 = (function() {
-	  var XMLHttpRequest = __webpack_require__(72);
+	  var XMLHttpRequest = __webpack_require__(75);
 	  var xhr = new XMLHttpRequest({ xdomain: false });
 	  return null != xhr.responseType;
 	})();
@@ -24904,7 +24937,7 @@
 
 
 /***/ },
-/* 79 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {
@@ -24912,7 +24945,7 @@
 	 * Module requirements.
 	 */
 	
-	var isArray = __webpack_require__(90);
+	var isArray = __webpack_require__(93);
 	
 	/**
 	 * Module exports.
@@ -24969,7 +25002,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 80 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -25004,7 +25037,7 @@
 
 
 /***/ },
-/* 81 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = after
@@ -25038,7 +25071,7 @@
 
 
 /***/ },
-/* 82 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -25094,7 +25127,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 83 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/*! http://mths.be/utf8js v2.0.0 by @mathias */
@@ -25335,10 +25368,10 @@
 	
 	}(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(88)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(91)(module), (function() { return this; }())))
 
 /***/ },
-/* 84 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -25403,19 +25436,7 @@
 
 
 /***/ },
-/* 85 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	module.exports = function(a, b){
-	  var fn = function(){};
-	  fn.prototype = b.prototype;
-	  a.prototype = new fn;
-	  a.prototype.constructor = a;
-	};
-
-/***/ },
-/* 86 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -25423,7 +25444,7 @@
 	 * Module dependencies.
 	 */
 	
-	var global = __webpack_require__(91);
+	var global = __webpack_require__(94);
 	
 	/**
 	 * Module exports.
@@ -25444,7 +25465,19 @@
 
 
 /***/ },
-/* 87 */
+/* 89 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	module.exports = function(a, b){
+	  var fn = function(){};
+	  fn.prototype = b.prototype;
+	  a.prototype = new fn;
+	  a.prototype.constructor = a;
+	};
+
+/***/ },
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -25493,7 +25526,7 @@
 
 
 /***/ },
-/* 88 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function(module) {
@@ -25509,7 +25542,7 @@
 
 
 /***/ },
-/* 89 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -25626,7 +25659,7 @@
 
 
 /***/ },
-/* 90 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -25635,7 +25668,7 @@
 
 
 /***/ },
-/* 91 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
