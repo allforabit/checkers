@@ -18,9 +18,7 @@ Reflux.StoreMethods.getMoreartyContext = function() {
 };
 
 var Store = Reflux.createStore({
-  listenables: Actions, //NOTE: read Reflux documentation.
-  //NOTE: Here we can set our binding\sub-binding variables.
-  //Again, :D read Reflux documentation.
+  listenables: Actions,
   init: function() {
     this.rootBinding = this.getMoreartyContext().getBinding();
     this.piecesBinding = this.rootBinding.sub('pieces');
@@ -35,13 +33,20 @@ var Store = Reflux.createStore({
     this.rootBinding.set('currentPlayer', color);
   },
   onUpdatePiece: function(pieceId, pieceState){
-    console.log(arguments);
     var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
     for (var key in pieceState) {
       if (pieceState.hasOwnProperty(key)) {
         var valueToSet = Immutable.fromJS(pieceState[key]);
-        console.log(valueToSet);
         pieceBinding.set(key, valueToSet);
+      }
+    }
+  },
+  onUpdateGame: function(gameState){
+    console.log(gameState);
+    for (var key in gameState) {
+      if (gameState.hasOwnProperty(key)) {
+        var valueToSet = Immutable.fromJS(gameState[key]);
+        this.rootBinding.set(key, valueToSet);
       }
     }
   },
@@ -65,26 +70,32 @@ var Store = Reflux.createStore({
 
   },
   onActivateCell: function(cell){
+
     //Make sure cell is white
     if(cell.color === 'white'){
       return;
     }
 
-    var selectedPiece = this.getSelectedPiece();
+    var piece = this.getSelectedPiece();
 
-    if(!selectedPiece){
+    if(!piece){
       return;
     }
 
+    var pieceBinding = utils.findPieceBindingById(this.piecesBinding, piece.get('id'));
+
+    pieceBinding.set('pos', Immutable.List(cell.pos));
+    pieceBinding.set('pending', true);
+
+    Actions.updatePosition(piece.get('id'), cell.pos);
     this.unSelectAll();
 
-    Actions.updatePosition(selectedPiece.get('id'), cell.pos);
-
   },
-  onMove: function(pieceId, destPos){
-    var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
-    pieceBinding.set('pos', Immutable.List(destPos));
-  },
+  // onMove: function(pieceId, destPos){
+  //   var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
+  //   pieceBinding.set('pos', Immutable.List(destPos));
+  //   pieceBinding.set('pending', false);
+  // },
   //update state on completion of turn
   onAttemptCompleteTurn: function(){
     if(!this.rootBinding.get('canCompleteTurn')){

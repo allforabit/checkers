@@ -2,13 +2,13 @@
   "name": "Checkers",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "config": {
     "env": "dev"
   },
   "scripts": {
     "start": "npm run serve | npm run dev",
-    "serve": "nodemon index.js",
+    "serve": "nodemon server.js",
     "dev": "webpack-dev-server --progress --colors --port 8090"
   },
   "author": "",

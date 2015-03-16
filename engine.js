@@ -26,12 +26,11 @@ var checkForWinner = function(pieces){
 var checkPieceKinged = function(piece){
   var kinged = false;
 
-  if(piece.get(['pos', 1]) === 7 && piece.get('color') === COLORS.RED){
+  if(piece.getIn(['pos',1]) === 7 && piece.get('color') === 'red'){
     kinged = true;
-  }else if(piece.get(['pos', 1]) === 0 && piece.get('color') === COLORS.YELLOW){
+  }else if(piece.getIn(['pos', 1]) === 0 && piece.get('color') === 'yellow'){
     kinged = true;
   }
-
   return kinged;
 }
 

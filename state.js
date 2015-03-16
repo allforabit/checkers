@@ -1,5 +1,7 @@
 module.exports = {
   me: null,
+  winner: null,
+  gameOver: false,
   currentPlayer: 'red',
   canCompleteTurn: false,
   mustCompleteTurn: false,

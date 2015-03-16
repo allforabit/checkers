@@ -15,6 +15,7 @@ var utils = require('./utils');
 var Actions = Reflux.createActions([
   'updatePosition',
   'updatePiece',
+  'updateGame',
   'assignPlayer',
   'changePlayer',
   'completeTurn',
@@ -35,6 +36,7 @@ Reflux.StoreMethods.getMoreartyContext = function() {
 io.on('connection', function(socket){
 
   Actions.playerConnect(socket);
+
   // console.log('user connected: ' + socket.id);
 
   socket.on('disconnect', function(){
@@ -75,6 +77,10 @@ io.on('connection', function(socket){
     io.emit('update piece', pieceId, pieceState);
   });
 
+  Actions.updateGame.listen(function(gameState){
+    io.emit('update game', gameState);
+  });
+
 
 });
 
@@ -87,10 +93,18 @@ var Store = Reflux.createStore({
     this.piecesBinding = this.rootBinding.sub('pieces');
   },
   onNewGame: function(){
-    // this.rootBinding.resetState();
-  },
-  onChangePlayer: function(color){
-    this.rootBinding.set('currentPlayer', color);
+    //TODO find a better way of doing this
+    //save player ids before reset
+    var redPlayer = this.rootBinding.get('redPlayer');
+    var yellowPlayer = this.rootBinding.get('yellowPlayer');
+
+    this.getMoreartyContext().resetState();
+    this.rootBinding.set('redPlayer', redPlayer);
+    this.rootBinding.set('yellowPlayer', yellowPlayer);
+
+    //restore player ids
+    Actions.updateGame(this.rootBinding.toJS());
+
   },
   onPlayerConnect: function(socket){
 
@@ -104,9 +118,9 @@ var Store = Reflux.createStore({
       Actions.assignPlayer('yellow');
     }
 
-    //when both players are assigned emit currentplayer event
+    //when both players are assigned send game update
     if(this.rootBinding.get('yellowPlayer') && this.rootBinding.get('redPlayer')){
-      Actions.changePlayer(this.rootBinding.get('currentPlayer'));
+      this.sendGameStateUpdate();
     }
 
   },
@@ -135,19 +149,28 @@ var Store = Reflux.createStore({
     var pieceBinding = utils.findPieceBindingById(this.piecesBinding, pieceId);
     var selectedPiece = pieceBinding.get();
 
+    pieceBinding.set('pending', false);
+
+    //TODO find better way of updating position
     //Make sure it is the correct color's turn
     if(this.rootBinding.get('currentPlayer') !== selectedPiece.get('color')){
+      //will reset position
+      Actions.updatePiece(pieceBinding.get('id'), pieceBinding.toJS());
       console.log('wrong color');
       return;
     }
 
     //User must complete turn
     if(this.rootBinding.get('mustCompleteTurn')){
+      //will reset position
+      Actions.updatePiece(pieceBinding.get('id'), pieceBinding.toJS());
       console.log('must complete turn');
       return;
     }
 
     if(!engine.checkLegalMove(this.piecesBinding.get(), pieceBinding.get(), destPos)){
+      //will reset position
+      Actions.updatePiece(pieceBinding.get('id'), pieceBinding.toJS());
       console.log('illegal move');
       return;
     }
@@ -156,13 +179,11 @@ var Store = Reflux.createStore({
 
     //Player can now optionally complete turn
     this.rootBinding.set('canCompleteTurn', true);
-    Actions.canCompleteTurn(true);
 
     this.rootBinding.set('pending', true);
 
     if(!engine.checkFurtherMovesAvailable(this.piecesBinding.get(), pieceBinding.get())){
       this.rootBinding.set('mustCompleteTurn', true);
-      Actions.mustCompleteTurn(true);
     }
 
     //Check if piece was kinged
@@ -193,6 +214,8 @@ var Store = Reflux.createStore({
 
     Actions.updatePiece(pieceBinding.get('id'), pieceBinding.toJS());
 
+    this.sendGameStateUpdate();
+
   },
   //update state on completion of turn
   onCompleteTurn: function(){
@@ -202,23 +225,31 @@ var Store = Reflux.createStore({
 
     //switch back canCompleteTurn flag
     this.rootBinding.set('canCompleteTurn', false);
-    Actions.canCompleteTurn(false);
     //switch back mustCompleteTurn flag
     this.rootBinding.set('mustCompleteTurn', false);
-    Actions.mustCompleteTurn(false);
 
     var currentPlayer = this.rootBinding.get('currentPlayer');
+    this.rootBinding.set('currentPlayer', (currentPlayer === 'red' ? 'yellow' : 'red'));
 
-    Actions.changePlayer(currentPlayer === 'red' ? 'yellow' : 'red');
+    this.sendGameStateUpdate();
+
+  },
+  sendGameStateUpdate: function(){
+
+    var state = {
+      canCompleteTurn: this.rootBinding.get('canCompleteTurn'),
+      mustCompleteTurn: this.rootBinding.get('mustCompleteTurn'),
+      currentPlayer: this.rootBinding.get('currentPlayer'),
+      gameOver: this.rootBinding.get('gameOver'),
+      winner: this.rootBinding.get('winner')
+    };
+
+    Actions.updateGame(state);
 
   }
 });
 
 app.use(express.static(__dirname + '/public'));
-
-
-
-
 
 http.listen(process.env.PORT || 5000);
 

@@ -35,12 +35,20 @@ socket.on('update piece', function(pieceId, piece){
   Actions.updatePiece(pieceId, piece);
 });
 
+socket.on('update game', function(gameState){
+  Actions.updateGame(gameState);
+});
+
 Actions.updatePosition.listen(function(pieceId, destPos){
   socket.emit('move attempt', pieceId, destPos);
 });
 
 Actions.completeTurn.listen(function(){
   socket.emit('complete turn');
+});
+
+Actions.newGame.listen(function(){
+  socket.emit('new game');
 });
 
 var Bootstrap = Ctx.bootstrap(Game);

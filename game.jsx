@@ -33,6 +33,9 @@ var Board = React.createClass({
   handleCompleteTurn: function(){
     Actions.attemptCompleteTurn();
   },
+  handleNewGame: function(){
+    Actions.newGame();
+  },
   handleKeyDown: function(e) {
 
     var SPACEBAR = 13;
@@ -147,12 +150,12 @@ var Board = React.createClass({
 
     return (
       <div style={style}>
+        <button className="button mb1 bg-gray" onClick={this.handleNewGame}>New game</button>
         <table>
           {boardRows}
         </table>
         <div> Turn - {currentPlayer}</div>
         {completeTurn}
-
         <div>
           <h3>Captured enemy pieces</h3>
           <div> Red - {redCapturedEnemyPiecesCount}</div>
@@ -167,6 +170,9 @@ var Board = React.createClass({
 
 var GameOver = React.createClass({
   mixins: [Morearty.Mixin],
+  handleClick: function(evt){
+    Actions.newGame();
+  },
   render: function(){
     var binding = this.getDefaultBinding();
     var winner = binding.get('winner');
@@ -181,7 +187,7 @@ var GameOver = React.createClass({
       <header className="center px3 py4 white bg-navy bg-cover bg-center">
         <h1 className="h1 h0-responsive caps mt4 mb0 regular">Game over</h1>
         <p className="h3 caps">Wnner <span className={winnerClasses}>{winner}</span></p>
-        <a href="#" className="h3 button button-big mb4">Start again</a>
+        <a href="#" className="h3 button button-big mb4" onClick={this.handleClick}>Start again</a>
       </header>
     );
   }
