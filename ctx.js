@@ -28,6 +28,7 @@ var Store = Reflux.createStore({
   },
   onAssignPlayer: function(color){
     this.rootBinding.set('me', color);
+    console.log(color);
   },
   onChangePlayer: function(color){
     this.rootBinding.set('currentPlayer', color);

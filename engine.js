@@ -142,7 +142,7 @@ var getPieceAtPos = function(pieces, pos){
     .first();
 }
 
-var checkLegalMove = function(pieces, selectedPiece, destPos){
+var checkLegalMove = function(pieces, selectedPiece, destPos, state){
 
   var isLegalMove = true;
 

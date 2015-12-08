@@ -1,41 +1,70 @@
 {
-  "name": "Checkers",
+  "name": "react-transform-boilerplate",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
-  "config": {
-    "env": "dev"
-  },
+  "description": "A new Webpack boilerplate with hot reloading React components, and error handling on module and component level.",
   "scripts": {
-    "start": "npm run serve | npm run dev",
-    "serve": "nodemon server.js",
-    "dev": "webpack-dev-server --progress --colors --port 8090"
+    "clean": "rimraf dist",
+    "build:webpack": "NODE_ENV=production webpack --config webpack.config.prod.js",
+    "build": "npm run clean && npm run build:webpack",
+    "start": "node devServer.js",
+    "lint": "eslint src"
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "body-parser": "^1.12.0",
-    "compression": "^1.4.2",
-    "express": "^4.12.2",
-    "flux": "^2.0.1",
-    "immutable": "^3.6.2",
-    "jquery": "^2.1.3",
-    "morearty": "^0.7.9",
-    "object-assign": "^2.0.0",
-    "react": "^0.12.2",
-    "reflux": "^0.2.5",
-    "socket.io": "^1.3.5",
-    "socket.io-client": "^1.3.5"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gaearon/react-transform-boilerplate.git"
   },
+  "keywords": [
+    "react",
+    "reactjs",
+    "boilerplate",
+    "hot",
+    "reload",
+    "hmr",
+    "live",
+    "edit",
+    "webpack",
+    "babel",
+    "react-transform"
+  ],
+  "author": "Dan Abramov <dan.abramov@me.com> (http://github.com/gaearon)",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/gaearon/react-transform-boilerplate/issues"
+  },
+  "homepage": "https://github.com/gaearon/react-transform-boilerplate",
   "devDependencies": {
-    "css-loader": "^0.9.1",
-    "http-server": "~0.7.1",
-    "jsx-loader": "~0.11.2",
-    "react-hot-loader": "^1.1.7",
-    "sass-loader": "^0.4.0",
-    "style-loader": "^0.8.3",
-    "traceur-loader": "^0.6.3",
-    "webpack": "~1.4.4",
-    "webpack-dev-server": "~1.6.5"
+    "babel-core": "^5.4.7",
+    "babel-eslint": "^3.1.9",
+    "babel-loader": "^5.1.2",
+    "babel-plugin-react-transform": "^1.1.1",
+    "css-loader": "^0.22.0",
+    "eslint": "^1.3.1",
+    "eslint-plugin-react": "^2.3.0",
+    "express": "^4.13.3",
+    "react-transform-catch-errors": "^1.0.0",
+    "react-transform-hmr": "^1.0.0",
+    "redbox-react": "^1.0.1",
+    "redux-devtools": "^3.0.0-beta-3",
+    "rimraf": "^2.4.3",
+    "sass-loader": "^3.1.2",
+    "style-loader": "^0.13.0",
+    "webpack": "^1.9.6",
+    "webpack-dev-middleware": "^1.2.0",
+    "webpack-hot-middleware": "^2.0.0"
+  },
+  "dependencies": {
+    "classnames": "^2.2.1",
+    "jquery": "^2.1.4",
+    "react": "^0.14.0",
+    "react-dom": "^0.14.0",
+    "react-redux": "^4.0.0",
+    "redux": "^3.0.4",
+    "redux-actions": "^0.8.0",
+    "redux-promise": "^0.5.0",
+    "redux-validator": "^0.1.3",
+    "redux-via": "^0.1.2",
+    "redux-via-socket.io": "^0.3.0",
+    "socket.io": "^1.2.0",
+    "socket.io-client": "^1.2.0"
   }
 }
