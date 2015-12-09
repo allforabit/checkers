@@ -1,5 +1,6 @@
 import { combineReducers } from 'redux'
-import { ADD_TODO, COMPLETE_TODO, SET_VISIBILITY_FILTER, SELECT_PIECE, SET_CURRENT_PLAYER_COLOR, CLICK_CELL, PlayerColors, VisibilityFilters } from './actions'
+import {handleActions} from 'redux-actions'
+import { ADD_TODO, COMPLETE_TODO, SET_VISIBILITY_FILTER, SELECT_PIECE, SET_CURRENT_PLAYER_COLOR, CLICK_CELL, SET_STATE, PlayerColors, VisibilityFilters } from './actions'
 const { RED, YELLOW } = PlayerColors
 const { SHOW_ALL  } = VisibilityFilters
 import {checkIfMoveWasJump} from './engine.js'
@@ -22,21 +23,29 @@ function currentPlayerColor(state = RED, action) {
   }
 }
 
-function game(state = {pieces: defaultPieces, selectedPieceIndex: null}, action){
-  switch (action.type) {
-    case SELECT_PIECE:
-      // Unselect if equal to prev selection (toggle)
-      if(action.index === state.selectedPieceIndex){
-        return Object.assign({}, state, {
-          selectedPieceIndex: null
-        })
-      }
+const game = handleActions({
 
+  [SET_STATE]: (state, action) => {
+    return action.payload
+  },
+
+  [SELECT_PIECE]: (state, action) => {
+    // Unselect if equal to prev selection (toggle)
+    if(action.payload === state.selectedPieceIndex){
       return Object.assign({}, state, {
-        selectedPieceIndex: action.index
+        selectedPieceIndex: null
       })
+    }
 
-    case CLICK_CELL:
+    return Object.assign({}, state, {
+      selectedPieceIndex: action.payload
+    })
+
+  },
+
+  [CLICK_CELL]: {
+    // Success
+    next(state, action){
 
       let {pieces, selectedPieceIndex} = state
       let newPos = action.payload
@@ -45,7 +54,7 @@ function game(state = {pieces: defaultPieces, selectedPieceIndex: null}, action)
 
       let capturedPieceIndex = checkIfMoveWasJump(pieces, newPos, selectedPiece.pos)
 
-      if(capturedPieceIndex){
+      if(capturedPieceIndex >= 0){
 
         let capturedPiece = state.pieces[capturedPieceIndex]
 
@@ -71,11 +80,15 @@ function game(state = {pieces: defaultPieces, selectedPieceIndex: null}, action)
         pieces: pieces
       })
 
-
-    default:
+    },
+    // Error
+    throw(state, action){
       return state
+    }
+
   }
-}
+
+}, {pieces: defaultPieces, selectedPieceIndex: null});
 
 const checkersApp = combineReducers({
   currentPlayerColor,

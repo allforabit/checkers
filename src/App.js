@@ -74,7 +74,7 @@ class App extends Component{
           pos: pos
         }
 
-        let pieceIndex = pieces.findIndex(p => p.pos[0] === xPos
+        let pieceIndex = pieces.findIndex(p => p.pos && p.pos[0] === xPos
           && p.pos[1] === yPos
           && p.captured !== true);
 

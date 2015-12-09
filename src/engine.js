@@ -50,7 +50,7 @@ export function checkPieceKinged(piece){
 
 export function checkIfMoveWasJump(pieces, newPos, previousPos){
 
-  var capturedPiece = null
+  var capturedPiece = -1
 
   if(Math.abs(newPos[1] - previousPos[1]) > 1){
     var jumpedPieceXCoords = previousPos[0] - ((previousPos[0] - newPos[0]) / 2)

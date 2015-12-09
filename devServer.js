@@ -5,13 +5,17 @@ var path = require('path');
 var express = require('express');
 var webpack = require('webpack');
 var config = require('./webpack.config.dev');
-var reduxViaSocketIO = require('redux-via-socket.io')
 var Validator = require('redux-validator')
 var redux = require('redux')
 
 var actions = require('./src/actions.js')
-var PlayerColors = actions.PlayerColors
+var sendState = actions.sendState
+
 var CLICK_CELL = actions.CLICK_CELL
+var SELECT_PIECE = actions.SELECT_PIECE
+
+var clickCell = actions.clickCell
+var selectPiece = actions.selectPiece
 
 var rootReducer = require('./src/reducers.js')
 
@@ -21,9 +25,6 @@ var http = require('http').Server(app)
 var compiler = webpack(config);
 var io = require('socket.io')(http)
 
-var outServerViaSocketIO = reduxViaSocketIO.outServerViaSocketIO
-var inServerViaSocketIO = reduxViaSocketIO.inServerViaSocketIO
-
 var compose = redux.compose
 var createStore = redux.createStore
 var applyMiddleware = redux.applyMiddleware
@@ -32,15 +33,35 @@ const validator = Validator()
 
 var finalCreateStore = compose(
   applyMiddleware(
-    validator,
-    outServerViaSocketIO(io) // initialize for outcoming actions
+    validator
   )
 )(createStore)
 
 var store = finalCreateStore(rootReducer)
 
-// initialize for incoming actions
-inServerViaSocketIO(io, store.dispatch);
+store.subscribe(
+  function(){ io.emit('state', store.getState().game) }
+)
+
+io.on('connection', function(socket){
+
+  socket.emit('state', store.getState().game)
+
+  socket.on(SELECT_PIECE, function(payload){
+    var result = store.dispatch(selectPiece(payload))
+    if(result.err){
+      io.emit('state', store.getState().game)
+    }
+  })
+
+  socket.on(CLICK_CELL, function(payload){
+    var result = store.dispatch(clickCell(payload))
+    if(result.err){
+      io.emit('state', store.getState().game)
+    }
+  })
+
+})
 
 app.use(require('webpack-dev-middleware')(compiler, {
   noInfo: true,

@@ -3,29 +3,34 @@ import React from 'react'
 import { render } from 'react-dom'
 import { compose, createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
-import promise from 'redux-promise'
 import Validator from 'redux-validator'
+
 import io from 'socket.io-client'
 
-import {outClientViaSocketIO, inClientViaSocketIO} from 'redux-via-socket.io'
+import {setState} from './actions'
 
-const socket = io() // socket.io client initialization
+import remoteActionMiddleware from './remote-action-middleware'
+
 
 import App from './App'
 import checkersApp from './reducers'
+
+const socket = io()
 
 const validator = Validator()
 
 const finalCreateStore = compose(
   // Enables your middleware:
-  applyMiddleware(validator, promise, outClientViaSocketIO(socket)), // any Redux middleware, e.g. redux-thunk
+  applyMiddleware(validator, remoteActionMiddleware(socket)),
   window.devToolsExtension ? window.devToolsExtension() : f => f
-)(createStore);
+)(createStore)
 
 
 const store = finalCreateStore(checkersApp)
 
-inClientViaSocketIO(socket, store.dispatch)
+socket.on('state', state => {
+  store.dispatch(setState(state))
+})
 
 const rootElement = document.getElementById('root')
 

@@ -10,6 +10,7 @@ export const SET_VISIBILITY_FILTER = 'SET_VISIBILITY_FILTER'
 export const SET_CURRENT_PLAYER_COLOR = 'SET_CURRENT_PLAYER_COLOR'
 export const SELECT_PIECE = 'SELECT_PIECE'
 export const CLICK_CELL = 'CLICK_CELL'
+export const SET_STATE = 'SET_STATE'
 
 /*
  * other constants
@@ -47,13 +48,9 @@ export function setVisibilityFilter(filter) {
   return { type: SET_VISIBILITY_FILTER, filter }
 }
 
-export function selectPiece(index) {
-  return { type: SELECT_PIECE, index }
-}
-
-// export function clickCell(x, y) {
-//   return { type: CLICK_CELL, x, y }
-// }
+export const selectPiece = createAction(SELECT_PIECE, payload => payload, () => ({
+  remote: true
+}))
 
 export const clickCell = createAction(CLICK_CELL, payload => payload, () => ({
   validator: {
@@ -61,13 +58,15 @@ export const clickCell = createAction(CLICK_CELL, payload => payload, () => ({
       {
         func: (payload, state) => checkLegalMove(state.game.pieces, state.game.pieces[state.game.selectedPieceIndex], payload),
         msg: 'Illegal move'
-      // },
-      // {
-      //   func: (payload, state) => state.game.selectedPieceIndex,
-      //   msg: 'Please select a piece first'
+      },
+      {
+        func: (payload, state) => state.game.selectedPieceIndex ? true : false,
+        msg: 'Please select a piece first'
       }
     ]
   },
-  // server: true
-}));
+  remote: true
+}))
 
+// Send state from server to client
+export const setState = createAction(SET_STATE, payload => payload)
