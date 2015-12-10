@@ -1,56 +1,67 @@
 import React, { Component, PropTypes } from 'react'
 import $ from 'jquery'
 import { connect } from 'react-redux'
-import {BoardCell, BoardRow, Piece} from './components'
-import {VisibilityFilters, selectPiece, clickCell} from './actions'
+import {BoardCell, BoardRow, Piece, GameOver} from './components'
+
+import {
+  PlayerColors,
+  VisibilityFilters,
+  selectPiece,
+  clickCell,
+  resetGame,
+  completeTurn
+} from './actions'
+
+const {RED, YELLOW} = PlayerColors
 
 class App extends Component{
   componentDidMount () {
-    $(document.body).on('keydown', this.handleKeyDown);
+    $(document.body).on('keydown', this.handleKeyDown.bind(this))
   }
 
   componentWillUnmount () {
-    $(document.body).off('keydown', this.handleKeyDown);
-  }
-  handleCompleteTurn (){
-    // Actions.attemptCompleteTurn();
-  }
-
-  handleNewGame (){
-    // Actions.newGame();
+    $(document.body).off('keydown', this.handleKeyDown.bind(this))
   }
 
   handleKeyDown(e) {
 
-    var SPACEBAR = 13;
-    var ENTER = 32;
+    const SPACEBAR = 13
+    const ENTER = 32
+
+    const {dispatch} = this.props
 
     if( e.keyCode === ENTER || e.keyCode === SPACEBAR) {
-      e.preventDefault();
-      // Actions.completeTurn();
+      e.preventDefault()
+      dispatch(completeTurn())
     }
 
   }
 
   render() {
 
-    const { currentPlayer, dispatch, canCompleteTurn, game, me } = this.props
-    const {selectedPieceIndex, pieces} = game
+    const { currentPlayer, dispatch, game, me } = this.props
+    const { selectedPieceIndex, pieces, gameOver, winner, canCompleteTurn} = game
 
-    var cellCount = 8
+    if(gameOver){
+      return (
+        <GameOver winner={winner} onClick={() => dispatch(resetGame())}></GameOver>
+      )
+    }
 
-    var boardRows = []
+    let cellCount = 8
 
-    var color = 'white'
+    let boardRows = []
+
+    let color = 'white'
 
     let xPos = 0
     let yPos = 0
 
-    for (var i = 0; i < cellCount; i++) {
+    for (let i = 0; i < cellCount; i++) {
 
       xPos = 0;
 
-      var boardCells = [];
+      let boardCells = [];
 
       // TODO dry up
       if(color === 'white'){
@@ -59,7 +70,7 @@ class App extends Component{
         color = 'white'
       }
 
-      for (var j = 0; j < cellCount; j++) {
+      for (let j = 0; j < cellCount; j++) {
 
         if(color === 'white'){
           color = 'black'
@@ -100,44 +111,41 @@ class App extends Component{
 
     }
 
-    // if (canCompleteTurn) {
-    //   console.log('canCompleteTurn');
-    //   var completeTurn = <button className="button mb1 bg-fuchsia" onClick={this.handleCompleteTurn}>Complete turn</button>;
-    // }
+    let completeTurnBtn
 
-    // var redCapturedEnemyPiecesCount = pieces
-    //   .filter(piece => piece.get('color') === 'yellow' && piece.get('captured') === true )
-    //   .count();
+    if (canCompleteTurn) {
+      completeTurnBtn = <button className="button mb1 bg-fuchsia" onClick={ () => dispatch(completeTurn()) }>Complete turn</button>;
+    }
 
-    // var yellowCapturedEnemyPiecesCount = pieces
-    //   .filter(piece => piece.get('color') === 'red' && piece.get('captured') === true )
-    //   .count();
+    var redCapturedEnemyPiecesCount = pieces
+      .filter(piece => piece.color === YELLOW && piece.captured === true )
+      .length
 
-    // var completeTurn = <button onClick={this.handleCompleteTurn}>Complete turn</button>;
+    var yellowCapturedEnemyPiecesCount = pieces
+      .filter(piece => piece.color === RED && piece.captured === true )
+      .length
 
     var style = {};
 
     style.maxWidth = '70%'
 
-    // if(pending){
-    //   style.opacity = '0.4';
-    // }
-
     return (
       <div style={style} >
-        <button className="button mb1 bg-gray" onClick={this.handleNewGame}>New game</button>
+        <button className="button mb1 bg-gray" onClick={ () => dispatch(resetGame()) }>New game</button>
         <table>
           <tbody>
           {boardRows}
           </tbody>
         </table>
+        <div> Turn - {currentPlayer}</div>
+        {completeTurnBtn}
         <div>
           <h3>Captured enemy pieces</h3>
-          <h3>Current player: {currentPlayer}</h3>
+          <div> Red - {redCapturedEnemyPiecesCount}</div>
+          <div> Yellow - {yellowCapturedEnemyPiecesCount}</div>
         </div>
-
       </div>
-    );
+    )
 
   }
 }

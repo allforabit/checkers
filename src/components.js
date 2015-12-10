@@ -33,21 +33,13 @@ export class BoardCell extends Component {
 
   render() {
 
-    // var cx = React.addons.classSet;
-    // var classes = cx({
-    //   'board-cell': true,
-    //   'center': true,
-    //   'bg-navy': this.props.cell.color === 'black',
-    //   'bg-darken-1': this.props.cell.color === 'white'
-    // });
-
     var classes = 'board-cell center';
 
     if(this.props.cell.color === 'black'){
       classes += ' bg-navy aqua';
     }
     if(this.props.cell.color === 'white'){
-      classes += ' bg-aqua red';
+      classes += ' bg-aqua navy';
     }
 
     var coords = this.props.cell.pos[0] + ',' + this.props.cell.pos[1];
@@ -74,3 +66,24 @@ export class BoardRow extends Component {
 }
 
 
+export class GameOver extends Component {
+  render(){
+
+    let {winner} = this.props
+
+    var winnerClasses = classNames({
+      'red': winner === RED,
+      'yellow': winner === YELLOW
+    })
+
+    return (
+      <header className="center px3 py4 white bg-navy bg-cover bg-center">
+        <h1 className="h1 h0-responsive caps mt4 mb0 regular">Game over</h1>
+        <p className="h3 caps">Wnner <span className={winnerClasses}>{winner}</span></p>
+        <a href="#" className="h3 button button-big mb4" onClick={this.props.onClick}>Start again</a>
+      </header>
+    )
+
+  }
+
+}

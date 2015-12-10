@@ -13,9 +13,11 @@ var sendState = actions.sendState
 
 var CLICK_CELL = actions.CLICK_CELL
 var SELECT_PIECE = actions.SELECT_PIECE
+var RESET_GAME = actions.RESET_GAME
 
 var clickCell = actions.clickCell
 var selectPiece = actions.selectPiece
+var resetGame = actions.resetGame
 
 var rootReducer = require('./src/reducers.js')
 
@@ -59,6 +61,10 @@ io.on('connection', function(socket){
     if(result.err){
       io.emit('state', store.getState().game)
     }
+  })
+
+  socket.on(RESET_GAME, function(){
+    var result = store.dispatch(resetGame())
   })
 
 })

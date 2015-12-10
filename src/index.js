@@ -11,7 +11,6 @@ import {setState} from './actions'
 
 import remoteActionMiddleware from './remote-action-middleware'
 
-
 import App from './App'
 import checkersApp from './reducers'
 
@@ -20,8 +19,11 @@ const socket = io()
 const validator = Validator()
 
 const finalCreateStore = compose(
-  // Enables your middleware:
-  applyMiddleware(validator, remoteActionMiddleware(socket)),
+  // Enables your middleware
+  applyMiddleware(
+    validator
+    // remoteActionMiddleware(socket)
+  ),
   window.devToolsExtension ? window.devToolsExtension() : f => f
 )(createStore)
 
@@ -29,7 +31,7 @@ const finalCreateStore = compose(
 const store = finalCreateStore(checkersApp)
 
 socket.on('state', state => {
-  store.dispatch(setState(state))
+  // store.dispatch(setState(state))
 })
 
 const rootElement = document.getElementById('root')

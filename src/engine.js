@@ -14,13 +14,13 @@ const Directions = {
 const { RED, YELLOW } = PlayerColors
 const { NORTH, SOUTH, BOTH } = Directions
 
-export function checkForWinner(game){
+export function checkForWinner(pieces){
 
-  var yellowPiecesLeft = game.pieces
+  var yellowPiecesLeft = pieces
       .filter(function(piece){ return piece.captured !== true && piece.color === YELLOW })
       .length
 
-  var redPiecesLeft = game.pieces
+  var redPiecesLeft = pieces
       .filter(function(piece){ return piece.captured !== true && piece.color === RED })
       .length
 
@@ -34,13 +34,13 @@ export function checkForWinner(game){
 
 }
 
-export function checkPieceKinged(piece){
+export function checkPieceKinged(pos, color){
 
-  if(piece.pos[1] === 7 && piece.color === RED){
+  if(pos[1] === 7 && color === RED){
     return true
   }
 
-  if(piece.pos[1] === 0 && piece.color === YELLOW){
+  if(pos[1] === 0 && color === YELLOW){
     return true
   }
 
@@ -91,7 +91,7 @@ export function checkFurtherMovesAvailable (pieces, piece){
   }
 };
 
-function getListLegalMoves(pieces, pos, direction, iterations){
+export function getListLegalMoves(pieces, pos, direction, iterations){
 
   var relativeCoordsList;
   //TODO constrain to board
@@ -171,4 +171,4 @@ export function checkLegalMove(pieces, selectedPiece, destPos){
 
   return isLegalMove
 
-};
+}
