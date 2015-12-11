@@ -19,6 +19,8 @@ import {
   SET_STATE,
   RESET_GAME,
   COMPLETE_TURN,
+  CONNECT_PLAYER,
+  DISCONNECT_PLAYER,
   PlayerColors
 } from './actions'
 
@@ -30,12 +32,12 @@ const defaultGameState = {
   gameOver: false,
   winner: null,
   pieces: [
-    {id: 1, color: RED, pos: [1,0]}, {id:2, color: RED, pos: [3,0]}, {id:3, color: RED, pos: [5,0]}, {id: 4, color: RED, pos: [7,0]},
-    {id: 6, color: RED, pos: [0,1]}, {id: 7, color: RED, pos: [2,1]}, {id: 8, color: RED, pos: [4,1]}, {id: 9, color: RED, pos: [6,1]},
-    {id: 11, color: RED, pos: [1,2]}, {id: 12, color: RED, pos: [3,2]}, {id: 13, color: RED, pos: [5,2]}, {id: 14, color: RED, pos: [7,2]},
-    {id: 16, color: YELLOW, pos: [0,5]}, {id: 17, color: YELLOW, pos: [2,5]}, {id: 18, color: YELLOW, pos: [4,5]}, {id: 19, color: YELLOW, pos: [6,5]},
-    {id: 21, color: YELLOW, pos: [1,6]}, {id: 22, color: YELLOW, pos: [3,6]}, {id: 23, color: YELLOW, pos: [5,6]}, {id: 24, color: YELLOW, pos: [7,6]},
-    {id: 26, color: YELLOW, pos: [0,7]}, {id: 27, color: YELLOW, pos: [2,7]}, {id: 28, color: YELLOW, pos: [4,7]}, {id: 29, color: YELLOW, pos: [6,7]}
+    {color: RED, pos: [1,0]}, {color: RED, pos: [3,0]}, {color: RED, pos: [5,0]}, {color: RED, pos: [7,0]},
+    {color: RED, pos: [0,1]}, {color: RED, pos: [2,1]}, {color: RED, pos: [4,1]}, {color: RED, pos: [6,1]},
+    {color: RED, pos: [1,2]}, {color: RED, pos: [3,2]}, {color: RED, pos: [5,2]}, {color: RED, pos: [7,2]},
+    {color: YELLOW, pos: [0,5]}, {color: YELLOW, pos: [2,5]}, {color: YELLOW, pos: [4,5]}, {color: YELLOW, pos: [6,5]},
+    {color: YELLOW, pos: [1,6]}, {color: YELLOW, pos: [3,6]}, {color: YELLOW, pos: [5,6]}, {color: YELLOW, pos: [7,6]},
+    {color: YELLOW, pos: [0,7]}, {color: YELLOW, pos: [2,7]}, {color: YELLOW, pos: [4,7]}, {color: YELLOW, pos: [6,7]}
   ]
 }
 
@@ -58,15 +60,13 @@ function updateItemInArray(arr, index, update){
 }
 
 const game = handleActions({
-
+  [SET_STATE]: (state, action) => {
+    console.log(action)
+    return action.payload.game
+  },
   [RESET_GAME]: (state, action) => {
     return Object.assign(defaultGameState)
   },
-
-  [SET_STATE]: (state, action) => {
-    return action.payload
-  },
-
   [SELECT_PIECE]: (state, action) => {
     // Unselect if equal to prev selection (toggle)
     if(action.payload === state.selectedPieceIndex){
@@ -126,8 +126,6 @@ const game = handleActions({
         let jumpMoves = furtherMovesAvailable
           .filter((posToCheck) => checkIfMoveWasJump(pieces, posToCheck, newPos) >= 0 )
 
-        console.log(jumpMoves)
-
         if(jumpMoves.length > 0){
           return Object.assign({}, state, {
             canCompleteTurn: true,
@@ -161,9 +159,68 @@ const game = handleActions({
 
 }, defaultGameState);
 
+// Server side
+const players = handleActions({
+  [CONNECT_PLAYER]: (state, action) => {
+    let existing = state.find((player) => player.id === action.payload)
+    if(existing){
+      return state
+    }
+
+    let player = {id: action.payload}
+
+    let redPlayer = state.find((player) => player.color === RED)
+    if(!redPlayer){
+      player.color = RED
+    }else{
+      let yellowPlayer = state.find((player) => player.color === YELLOW)
+      if(!yellowPlayer){
+        player.color = YELLOW
+      }else{
+        player.color = null
+      }
+
+    }
+
+    console.log(player)
+    console.log([...state, player])
+    
+    return [...state, player]
+
+  },
+  [DISCONNECT_PLAYER]: (state, action) => {
+
+    let i = state.findIndex((player) => player.id === action.payload)
+    if(i !== -1){
+      return [
+        ...state.slice(0, i),
+        ...state.slice(i + 1)
+      ]
+    }
+    return state
+  }
+}, [])
+
+// Client side
+const me = handleActions({
+  [SET_STATE]: (state, action) => {
+
+    if(action.payload.me){
+      console.log(action.payload.me)
+      return action.payload.me
+    }
+
+    return state
+
+  }
+}, {})
+
+
 const checkersApp = combineReducers({
   currentPlayerColor,
-  game
+  game,
+  players,
+  me
 })
 
 export default checkersApp

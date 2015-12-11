@@ -21,17 +21,18 @@ const validator = Validator()
 const finalCreateStore = compose(
   // Enables your middleware
   applyMiddleware(
-    validator
-    // remoteActionMiddleware(socket)
+    validator,
+    remoteActionMiddleware(socket)
   ),
   window.devToolsExtension ? window.devToolsExtension() : f => f
 )(createStore)
 
+window.ios = socket
 
 const store = finalCreateStore(checkersApp)
 
 socket.on('state', state => {
-  // store.dispatch(setState(state))
+  store.dispatch(setState(state))
 })
 
 const rootElement = document.getElementById('root')

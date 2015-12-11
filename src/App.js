@@ -137,6 +137,7 @@ class App extends Component{
           {boardRows}
           </tbody>
         </table>
+        <div> I am - {me.color}</div>
         <div> Turn - {currentPlayer}</div>
         {completeTurnBtn}
         <div>
@@ -173,7 +174,8 @@ function selectTodos(todos, filter) {
 function select(state) {
   return {
     currentPlayer: state.currentPlayerColor,
-    game: state.game
+    game: state.game,
+    me: state.me
   }
 }
 

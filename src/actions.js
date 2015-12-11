@@ -4,6 +4,8 @@ import {checkLegalMove} from './engine.js'
 /*
  * action types
  */
+export const CONNECT_PLAYER = 'CONNECT_PLAYER'
+export const DISCONNECT_PLAYER = 'DISCONNECT_PLAYER'
 export const SET_CURRENT_PLAYER_COLOR = 'SET_CURRENT_PLAYER_COLOR'
 export const SELECT_PIECE = 'SELECT_PIECE'
 export const CLICK_CELL = 'CLICK_CELL'
@@ -85,6 +87,10 @@ export const completeTurn = createAction(COMPLETE_TURN, payload => payload, () =
   },
   remote: true
 }))
+
+// Server side only
+export const connectPlayer = createAction(CONNECT_PLAYER, payload => payload)
+export const disconnectPlayer = createAction(DISCONNECT_PLAYER, payload => payload)
 
 // Set state from server to client
 export const setState = createAction(SET_STATE, payload => payload)
