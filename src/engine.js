@@ -2,7 +2,8 @@
 
 const PlayerColors = {
   RED: 'RED',
-  YELLOW: 'YELLOW'
+  YELLOW: 'YELLOW',
+  STALEMATE: 'STALEMATE'
 }
 
 const Directions = {
@@ -11,27 +12,43 @@ const Directions = {
   BOTH: 0
 }
 
-const { RED, YELLOW } = PlayerColors
+const { RED, YELLOW, STALEMATE } = PlayerColors
 const { NORTH, SOUTH, BOTH } = Directions
 
 export function checkForWinner(pieces){
 
-  var yellowPiecesLeft = pieces
+  let yellowPiecesLeft = pieces
       .filter(function(piece){ return piece.captured !== true && piece.color === YELLOW })
-      .length
 
-  var redPiecesLeft = pieces
+  let redPiecesLeft = pieces
       .filter(function(piece){ return piece.captured !== true && piece.color === RED })
-      .length
 
-  if(yellowPiecesLeft === 0){
+  if(yellowPiecesLeft.length === 0){
     return RED
-  }else if(redPiecesLeft === 0){
+  }else if(redPiecesLeft.length === 0){
     return YELLOW
-  }else{
-    return null
   }
 
+  let yellowMovesLeft = yellowPiecesLeft
+    .filter((piece) => getListLegalMoves(pieces, piece).length > 0 )
+
+  let redMovesLeft = redPiecesLeft
+    .filter((piece) => getListLegalMoves(pieces, piece).length > 0 )
+
+
+  if(yellowMovesLeft.length === 0 && redMovesLeft.length === 0){
+    return STALEMATE
+  }
+
+  if(redMovesLeft.length === 0 ){
+    return YELLOW
+  }
+
+  if(yellowMovesLeft.length === 0){
+    return RED
+  }
+
+  return null
 }
 
 export function checkPieceKinged(pos, color){
@@ -75,37 +92,46 @@ export function getDirection(piece){
     return NORTH;
   }
 
-};
+}
 
 export function checkFurtherMovesAvailable (pieces, piece){
-  return false;
+  let furtherMovesAvailable = getListLegalMoves(pieces, piece)
+  if(capturedPieceIndex >= 0){
+    if(furtherMovesAvailable.length > 0){
 
-  //TODO figure out how to do this best
-  //Need to constrain to previous move
-  var legalMoves = getListLegalMoves(piece.get('pos').toJS(), getDirection(piece));
-  var legalMovesThatAreJumps = legalMoves.filter(function(coord){ return Math.abs(coord[1] - piece.get(['pos', 1])) > 1}).length;
-  if(legalMovesThatAreJumps){
-    return true;
-  }else{
-    return false;
+      let jumpMoves = furtherMovesAvailable
+        .filter((posToCheck) => checkIfMoveWasJump(pieces, posToCheck, newPos) >= 0 )
+
+      if(jumpMoves.length > 0){
+        return Object.assign({}, state, {
+          canCompleteTurn: true,
+          mustCompleteTurn: false,
+          pieces: pieces
+        })
+      }
+
+    }
   }
-};
+}
 
-export function getListLegalMoves(pieces, pos, direction, iterations){
+export function getListLegalMoves(pieces, piece){
 
-  var relativeCoordsList;
-  //TODO constrain to board
+  let direction = getDirection(piece)
+  let pos = piece.pos
+  let color = piece.color
+
+  let relativeCoordsList
   if(direction === BOTH){
     relativeCoordsList = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
   }else{
     relativeCoordsList = [[-1, 1*direction], [1, 1*direction]];
   }
 
-  var legalMoves = relativeCoordsList.map( function(coord){
-    return [coord[0] + pos[0], coord[1] + pos[1]];
-  }).map(function(coord){
+  let legalMoves = relativeCoordsList.map( (coord) => [coord[0] + pos[0], coord[1] + pos[1]])
+  .map(function(coord){
+    // An existing piece occupies this coordinate
     if(hasPiece(pieces, coord)){
-      if(hasEnemyPiece(pieces, coord)){
+      if(hasEnemyPiece(pieces, coord, color)){
         //neighbour coordinates from enemy piece perspective
         return relativeCoordsList.map(function(enemyCoord){
           return [coord[0] + enemyCoord[0], coord[1] + enemyCoord[1]];
@@ -114,19 +140,19 @@ export function getListLegalMoves(pieces, pos, direction, iterations){
           //cell is not equal to the source position. I.e. can only jump
           //horizontally. Slightly hackish!
           return !hasPiece(pieces, enemyCoord) && (enemyCoord[0] !== pos[0]);
-        });
+        })
       }else{
-        return [];
+        return []
       }
     }else{
-      return [coord];
+      return [coord]
     }
   })
-  .filter(function(coord) {
-    return coord !== null && coord.length > 0;
-  }).reduce(function(a, b){
-    return a.concat(b);
-  }, []);
+  .filter((coord) => coord !== null && coord.length > 0)
+  // Flatten
+  .reduce((a, b) => a.concat(b), [])
+  // Filter to restrict to board
+  .filter((coord) => coord[0] < 8 && coord[1] < 8)
 
   return legalMoves;
 
@@ -136,17 +162,16 @@ function hasPiece(pieces, pos){
   return getPieceIndexAtPos(pieces, pos) >= 0
 }
 
-
-function hasEnemyPiece(pieces, pos, enemyColor){
+function hasEnemyPiece(pieces, pos, color){
   let pieceIndex = getPieceIndexAtPos(pieces, pos);
   if(pieceIndex < 0){
     return false;
   }
   let piece = pieces[pieceIndex]
-  if(piece && (piece.color !== enemyColor)){
-    return true
-  }else{
+  if(piece && piece.color === color){
     return false
+  }else{
+    return true
   }
 }
 
@@ -161,7 +186,7 @@ export function checkLegalMove(pieces, selectedPiece, destPos){
 
   var currentPos = selectedPiece.pos
 
-  var listLegalMoves = getListLegalMoves(pieces, currentPos, getDirection(selectedPiece))
+  var listLegalMoves = getListLegalMoves(pieces, selectedPiece)
 
   var legalMove = listLegalMoves.filter( coord => coord[0] === destPos[0] && coord[1] === destPos[1] )
 

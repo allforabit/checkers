@@ -61,7 +61,6 @@ function updateItemInArray(arr, index, update){
 
 const game = handleActions({
   [SET_STATE]: (state, action) => {
-    console.log(action)
     return action.payload.game
   },
   [RESET_GAME]: (state, action) => {
@@ -120,6 +119,7 @@ const game = handleActions({
     // Check for further moves 
     // Legal moves that are jumps
     let furtherMovesAvailable = getListLegalMoves(pieces, newPos, getDirection(selectedPiece))
+
     if(capturedPieceIndex >= 0){
       if(furtherMovesAvailable.length > 0){
 
@@ -137,7 +137,6 @@ const game = handleActions({
       }
     }
 
-
     return Object.assign({}, state, {
       canCompleteTurn: true,
       mustCompleteTurn: true,
@@ -147,6 +146,13 @@ const game = handleActions({
   },
 
   [COMPLETE_TURN]: (state, action) => {
+
+    console.log(Object.assign({}, state, {
+      selectedPieceIndex: null,
+      canCompleteTurn: false,
+      mustCompleteTurn: false,
+      currentPlayerColor: state.currentPlayerColor === RED ? YELLOW : RED
+    }))
 
     return Object.assign({}, state, {
       selectedPieceIndex: null,
@@ -181,9 +187,6 @@ const players = handleActions({
       }
 
     }
-
-    console.log(player)
-    console.log([...state, player])
     
     return [...state, player]
 
@@ -206,7 +209,6 @@ const me = handleActions({
   [SET_STATE]: (state, action) => {
 
     if(action.payload.me){
-      console.log(action.payload.me)
       return action.payload.me
     }
 

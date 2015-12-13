@@ -18,7 +18,8 @@ export const COMPLETE_TURN = 'COMPLETE_TURN'
  */
 export const PlayerColors = {
   RED: 'RED',
-  YELLOW: 'YELLOW'
+  YELLOW: 'YELLOW',
+  STALEMATE: 'STALEMATE'
 }
 
 export const Directions = {
@@ -30,13 +31,23 @@ export const Directions = {
 /*
  * action creators
  */
-
 export const selectPiece = createAction(SELECT_PIECE, payload => payload, () => ({
   validator: {
     payload: [
       {
         func: (payload, state) => state.game.currentPlayerColor === state.game.pieces[payload].color,
         msg: 'Please wait until it\'s your turn'
+      },
+      {
+        func: (payload, state) => {
+          // Client validation is it the correct player making the move
+          // (state.me only exists on client and has access to own player)
+          if(state.me && state.me.id){
+            return state.me.color === state.game.currentPlayerColor
+          }
+          return true
+        },
+        msg: 'You may not move your opponents pieces'
       },
       {
         func: (payload, state) => !state.game.mustCompleteTurn,

@@ -14,12 +14,14 @@ var sendState = actions.sendState
 var CLICK_CELL = actions.CLICK_CELL
 var SELECT_PIECE = actions.SELECT_PIECE
 var RESET_GAME = actions.RESET_GAME
+var COMPLETE_TURN = actions.COMPLETE_TURN
 
 var clickCell = actions.clickCell
 var selectPiece = actions.selectPiece
 var resetGame = actions.resetGame
 var connectPlayer = actions.connectPlayer
 var disconnectPlayer = actions.disconnectPlayer
+var completeTurn = actions.completeTurn
 
 var rootReducer = require('./src/reducers.js')
 
@@ -55,6 +57,18 @@ function select(state, clientId) {
       game: state.game
     }
   }
+
+}
+
+// Validate that the correct player is making the move
+function checkCorrectClientId(state, id){
+  // Make sure it's the correct client id
+  var state = store.getState()
+  var game = state.game
+  var players = state.players
+
+  var clientId = players.find(function(player){ return player.color === game.currentPlayerColor }).id
+  return clientId === id
 }
 
 store.subscribe(
@@ -65,25 +79,39 @@ io.on('connection', function(socket){
 
   store.dispatch(connectPlayer(socket.id))
 
-  console.log('state', select(store.getState(), socket.id))
   socket.emit('state', select(store.getState(), socket.id))
 
-  socket.on('hello', function(payload){
-    console.log('hello')
-    console.log(payload)
+  socket.on(SELECT_PIECE, function(payload){
+
+    if(!checkCorrectClientId(store.getState(), socket.id)){
+      io.emit('state', select(store.getState()))
+      return
+    }
+
+    var result = store.dispatch(selectPiece(payload))
+    if(result.err){
+      io.emit('state', select(store.getState()))
+    }
+
   })
 
-  socket.on(SELECT_PIECE, function(payload){
-    console.log('sel piece')
-    var result = store.dispatch(selectPiece(payload))
+  socket.on(CLICK_CELL, function(payload){
+    if(!checkCorrectClientId(store.getState(), socket.id)){
+      io.emit('state', select(store.getState()))
+      return
+    }
+    var result = store.dispatch(clickCell(payload))
     if(result.err){
       io.emit('state', select(store.getState()))
     }
   })
 
-  socket.on(CLICK_CELL, function(payload){
-    console.log('click cell')
-    var result = store.dispatch(clickCell(payload))
+  socket.on(COMPLETE_TURN, function(payload){
+    if(!checkCorrectClientId(store.getState(), socket.id)){
+      io.emit('state', select(store.getState()))
+      return
+    }
+    var result = store.dispatch(completeTurn(payload))
     if(result.err){
       io.emit('state', select(store.getState()))
     }

@@ -38,6 +38,7 @@ export class BoardCell extends Component {
     if(this.props.cell.color === 'black'){
       classes += ' bg-navy aqua';
     }
+
     if(this.props.cell.color === 'white'){
       classes += ' bg-aqua navy';
     }

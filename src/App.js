@@ -39,8 +39,8 @@ class App extends Component{
 
   render() {
 
-    const { currentPlayer, dispatch, game, me } = this.props
-    const { selectedPieceIndex, pieces, gameOver, winner, canCompleteTurn} = game
+    const { dispatch, game, me } = this.props
+    const { currentPlayerColor, selectedPieceIndex, pieces, gameOver, winner, canCompleteTurn} = game
 
     if(gameOver){
       return (
@@ -96,7 +96,7 @@ class App extends Component{
         let isCurrentPieceSelected = pieceIndex === selectedPieceIndex;
 
         if(piece){
-          boardCells.push(<BoardCell key={key} cell={cell} ><Piece key={key} piece={piece} selected={isCurrentPieceSelected} currentPlayer={currentPlayer} onClick={() => dispatch(selectPiece(pieceIndex))} ></Piece></BoardCell>);
+          boardCells.push(<BoardCell key={key} cell={cell} ><Piece key={key} piece={piece} selected={isCurrentPieceSelected} onClick={() => dispatch(selectPiece(pieceIndex))} ></Piece></BoardCell>);
         }else{
           boardCells.push(<BoardCell key={key} onClick={() => dispatch(clickCell(pos)) } cell={cell} />);
         }
@@ -138,7 +138,7 @@ class App extends Component{
           </tbody>
         </table>
         <div> I am - {me.color}</div>
-        <div> Turn - {currentPlayer}</div>
+        <div> Turn - {currentPlayerColor}</div>
         {completeTurnBtn}
         <div>
           <h3>Captured enemy pieces</h3>
@@ -173,7 +173,6 @@ function selectTodos(todos, filter) {
 // Note: use https://github.com/faassen/reselect for better performance.
 function select(state) {
   return {
-    currentPlayer: state.currentPlayerColor,
     game: state.game,
     me: state.me
   }
