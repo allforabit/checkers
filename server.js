@@ -136,7 +136,7 @@ io.on('connection', function(socket){
 // app.use(webpackHotMiddleWare(compiler));
 
 app.get('*', function(req, res) {
-  res.sendFile(path.join(__dirname, './index.html'));
+  res.sendFile(path.join(__dirname, './index.html'))
 })
 
 http.listen(process.env.PORT || 3000)
