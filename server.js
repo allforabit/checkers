@@ -135,9 +135,8 @@ app.use(webpackDevMiddleWare(compiler, {
 
 app.use(webpackHotMiddleWare(compiler));
 
-app.get('*', function(req, res) {
-  res.sendFile(path.join(__dirname, './index.html'));
-})
+app.use(express.static(__dirname + '/public'))
+app.use('/static', express.static(__dirname + '/dist'))
 
 http.listen(process.env.PORT || 3000, function(err) {
   if (err) {
