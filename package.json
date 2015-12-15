@@ -33,7 +33,22 @@
     "url": "https://github.com/gaearon/react-transform-boilerplate/issues"
   },
   "homepage": "https://github.com/gaearon/react-transform-boilerplate",
-  "devDependencies": {
+  "dependencies": {
+    "babel-core": "^5.4.7",
+    "express": "^4.13.3",
+    "classnames": "^2.2.1",
+    "jquery": "^2.1.4",
+    "react": "^0.14.0",
+    "react-dom": "^0.14.0",
+    "react-redux": "^4.0.0",
+    "redux": "^3.0.4",
+    "redux-actions": "^0.8.0",
+    "redux-promise": "^0.5.0",
+    "redux-validator": "^0.1.3",
+    "redux-via": "^0.1.2",
+    "redux-via-socket.io": "^0.3.0",
+    "socket.io": "^1.2.0",
+    "socket.io-client": "^1.2.0",
     "babel-eslint": "^3.1.9",
     "babel-loader": "^5.1.2",
     "babel-plugin-react-transform": "^1.1.1",
@@ -51,22 +66,5 @@
     "webpack": "^1.9.6",
     "webpack-dev-middleware": "^1.2.0",
     "webpack-hot-middleware": "^2.0.0"
-  },
-  "dependencies": {
-    "babel-core": "^5.4.7",
-    "express": "^4.13.3",
-    "classnames": "^2.2.1",
-    "jquery": "^2.1.4",
-    "react": "^0.14.0",
-    "react-dom": "^0.14.0",
-    "react-redux": "^4.0.0",
-    "redux": "^3.0.4",
-    "redux-actions": "^0.8.0",
-    "redux-promise": "^0.5.0",
-    "redux-validator": "^0.1.3",
-    "redux-via": "^0.1.2",
-    "redux-via-socket.io": "^0.3.0",
-    "socket.io": "^1.2.0",
-    "socket.io-client": "^1.2.0"
   }
 }
