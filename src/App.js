@@ -117,20 +117,16 @@ class App extends Component{
       completeTurnBtn = <button className="button mb1 bg-fuchsia" onClick={ () => dispatch(completeTurn()) }>Complete turn</button>;
     }
 
-    var redCapturedEnemyPiecesCount = pieces
+    let redCapturedEnemyPiecesCount = pieces
       .filter(piece => piece.color === YELLOW && piece.captured === true )
       .length
 
-    var yellowCapturedEnemyPiecesCount = pieces
+    let yellowCapturedEnemyPiecesCount = pieces
       .filter(piece => piece.color === RED && piece.captured === true )
       .length
 
-    var style = {};
-
-    style.maxWidth = '70%'
-
     return (
-      <div style={style} >
+      <div >
         <button className="button mb1 bg-gray" onClick={ () => dispatch(resetGame()) }>New game</button>
         <table>
           <tbody>

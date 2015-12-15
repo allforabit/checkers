@@ -118,7 +118,7 @@ const game = handleActions({
 
     // Check for further moves 
     // Legal moves that are jumps
-    let furtherMovesAvailable = getListLegalMoves(pieces, newPos, getDirection(selectedPiece))
+    let furtherMovesAvailable = getListLegalMoves(pieces, {color: selectedPiece.color, kinged: selectedPiece.kinged, pos: newPos})
 
     if(capturedPieceIndex >= 0){
       if(furtherMovesAvailable.length > 0){

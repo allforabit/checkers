@@ -20,7 +20,7 @@ module.exports = {
       __CLIENT__: true,
       __SERVER__: false,
       __DEVELOPMENT__: false,
-      __DEVTOOLS__: false
+      __DEVTOOLS__: false  // <-------- DISABLE redux-devtools HERE
     }),
     new webpack.optimize.UglifyJsPlugin({
       compressor: {
@@ -33,6 +33,20 @@ module.exports = {
       test: /\.js$/,
       loaders: ['babel'],
       include: path.join(__dirname, 'src')
-    }]
+    },
+    {
+      test: /\.css$/,
+      loader: 'style-loader!css-loader'
+    },
+    {
+      test: /\.scss$/,
+      // Query parameters are passed to node-sass
+      loader: "style!css!sass?outputStyle=expanded&" +
+        "includePaths[]=" +
+          (path.resolve(__dirname, "./bower_components")) + "&" +
+        "includePaths[]=" +
+          (path.resolve(__dirname, "./node_modules"))
+    }
+    ]
   }
 };

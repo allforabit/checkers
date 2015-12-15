@@ -27,8 +27,6 @@ const finalCreateStore = compose(
   window.devToolsExtension ? window.devToolsExtension() : f => f
 )(createStore)
 
-window.ios = socket
-
 const store = finalCreateStore(checkersApp)
 
 socket.on('state', state => {

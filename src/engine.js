@@ -49,6 +49,7 @@ export function checkForWinner(pieces){
   }
 
   return null
+
 }
 
 export function checkPieceKinged(pos, color){
@@ -94,7 +95,7 @@ export function getDirection(piece){
 
 }
 
-export function checkFurtherMovesAvailable (pieces, piece){
+export function checkFurtherMovesAvailable(pieces, piece){
   let furtherMovesAvailable = getListLegalMoves(pieces, piece)
   if(capturedPieceIndex >= 0){
     if(furtherMovesAvailable.length > 0){
@@ -116,8 +117,9 @@ export function checkFurtherMovesAvailable (pieces, piece){
 
 export function getListLegalMoves(pieces, piece){
 
+  console.log(piece)
+
   let direction = getDirection(piece)
-  let pos = piece.pos
   let color = piece.color
 
   let relativeCoordsList
@@ -127,7 +129,7 @@ export function getListLegalMoves(pieces, piece){
     relativeCoordsList = [[-1, 1*direction], [1, 1*direction]];
   }
 
-  let legalMoves = relativeCoordsList.map( (coord) => [coord[0] + pos[0], coord[1] + pos[1]])
+  let legalMoves = relativeCoordsList.map( (coord) => [coord[0] + piece.pos[0], coord[1] + piece.pos[1]])
   .map(function(coord){
     // An existing piece occupies this coordinate
     if(hasPiece(pieces, coord)){
@@ -139,7 +141,7 @@ export function getListLegalMoves(pieces, piece){
           //make sure there's no existing piece and the x axis of destination
           //cell is not equal to the source position. I.e. can only jump
           //horizontally. Slightly hackish!
-          return !hasPiece(pieces, enemyCoord) && (enemyCoord[0] !== pos[0]);
+          return !hasPiece(pieces, enemyCoord) && (enemyCoord[0] !== piece.pos[0]);
         })
       }else{
         return []
@@ -184,7 +186,7 @@ export function checkLegalMove(pieces, selectedPiece, destPos){
 
   var isLegalMove = true
 
-  var currentPos = selectedPiece.pos
+  console.log(selectedPiece)
 
   var listLegalMoves = getListLegalMoves(pieces, selectedPiece)
 
