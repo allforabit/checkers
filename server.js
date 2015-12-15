@@ -22,13 +22,13 @@ import {
   completeTurn
 } from './src/actions'
 
-// import webpackDevMiddleWare from 'webpack-dev-middleware'
-// import webpackHotMiddleWare from 'webpack-hot-middleware'
+import webpackDevMiddleWare from 'webpack-dev-middleware'
+import webpackHotMiddleWare from 'webpack-hot-middleware'
 
-// import webpack from 'webpack'
-// import config from './webpack.config.dev'
+import webpack from 'webpack'
+import config from './webpack.config.dev'
 
-// const compiler = webpack(config)
+const compiler = webpack(config)
 
 const app = express()
 const http = httpModule.Server(app)
@@ -128,17 +128,22 @@ io.on('connection', function(socket){
 
 })
 
-// app.use(webpackDevMiddleWare(compiler, {
-//   noInfo: true,
-//   publicPath: config.output.publicPath
-// }))
+app.use(webpackDevMiddleWare(compiler, {
+  noInfo: true,
+  publicPath: config.output.publicPath
+}))
 
-// app.use(webpackHotMiddleWare(compiler));
+app.use(webpackHotMiddleWare(compiler));
 
 app.get('*', function(req, res) {
-  res.sendFile(path.join(__dirname, './index.html'))
+  res.sendFile(path.join(__dirname, './index.html'));
 })
 
-http.listen(process.env.PORT || 3000)
+http.listen(process.env.PORT || 3000, function(err) {
+  if (err) {
+    console.log(err);
+    return;
+  }
+})
 
 export default app
