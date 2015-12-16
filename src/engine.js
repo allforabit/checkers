@@ -89,7 +89,7 @@ export function checkFurtherMovesAvailable(pieces, piece, capturedPieceIndex){
     if(furtherMovesAvailable.length > 0){
 
       let jumpMoves = furtherMovesAvailable
-        .filter((posToCheck) => checkIfMoveWasJump(pieces, posToCheck, newPos) >= 0 )
+        .filter((posToCheck) => checkIfMoveWasJump(pieces, posToCheck, piece.pos) >= 0 )
 
       if(jumpMoves.length > 0){
         return true
@@ -168,8 +168,6 @@ function getPieceIndexAtPos(pieces, pos){
 export function checkLegalMove(pieces, selectedPiece, destPos){
 
   var isLegalMove = true
-
-  console.log(selectedPiece)
 
   var listLegalMoves = getListLegalMoves(pieces, selectedPiece)
 
