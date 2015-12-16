@@ -2,22 +2,21 @@ import path from 'path'
 import express from 'express'
 import Validator from 'redux-validator'
 
-import httpModule from 'http'
+import http from 'http'
 import socketIO from 'socket.io'
+
+import { compose, createStore, applyMiddleware } from 'redux'
 
 import rootReducer from './src/reducers'
 
-import {compose, createStore, applyMiddleware } from 'redux'
+import { Actions } from './src/constants'
 
 import {
-  SELECT_PIECE,
-  CLICK_CELL,
-  RESET_GAME,
-  COMPLETE_TURN,
   clickCell,
   selectPiece,
   resetGame,
   connectPlayer,
+  connectPlayers,
   disconnectPlayer,
   completeTurn
 } from './src/actions'
@@ -28,12 +27,19 @@ import webpackHotMiddleWare from 'webpack-hot-middleware'
 import webpack from 'webpack'
 import config from './webpack.config.dev'
 
+const {
+  SELECT_PIECE,
+  CLICK_CELL,
+  RESET_GAME,
+  COMPLETE_TURN
+} = Actions
+
 const compiler = webpack(config)
 
 const app = express()
-const http = httpModule.Server(app)
+const server = http.Server(app)
 
-const io = socketIO(http)
+const io = socketIO(server)
 
 const validator = Validator()
 
@@ -77,7 +83,7 @@ store.subscribe(
 
 io.on('connection', function(socket){
 
-  store.dispatch(connectPlayer(socket.id))
+  store.dispatch(connectPlayers(Object.keys(io.sockets.connected)))
 
   socket.emit('state', select(store.getState(), socket.id))
 
@@ -121,11 +127,6 @@ io.on('connection', function(socket){
     store.dispatch(resetGame())
   })
 
-  socket.on('disconnect', function () {
-    store.dispatch(disconnectPlayer(socket.id))
-    io.emit('state', select(store.getState(), socket.id))
-  })
-
 })
 
 app.use(webpackDevMiddleWare(compiler, {
@@ -138,11 +139,11 @@ app.use(webpackHotMiddleWare(compiler));
 app.use(express.static(__dirname + '/public'))
 app.use('/static', express.static(__dirname + '/dist'))
 
-http.listen(process.env.PORT || 3000, function(err) {
+server.listen(process.env.PORT || 3000, function(err) {
   if (err) {
     console.log(err);
     return;
   }
 })
 
-export default app
+export default server

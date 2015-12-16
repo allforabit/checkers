@@ -3,7 +3,5 @@ Checkers
 
 Checkers implemented using react.js, redux.js with sockets.io providing multiplayer functionality.
 
-##TODO
-- Move code from dev-server to src/server
-- Refactor reducer/engine
-- Move constants into constants
+Currently it only allows for one game to be played. The first two users to connect in will be auto assigned a color.
+Subsequent users will only have viewing privelages.

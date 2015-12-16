@@ -1,16 +1,4 @@
-// import { Directions, PlayerColors } from './actions'
-
-const PlayerColors = {
-  RED: 'RED',
-  YELLOW: 'YELLOW',
-  STALEMATE: 'STALEMATE'
-}
-
-const Directions = {
-  NORTH: -1,
-  SOUTH: 1,
-  BOTH: 0
-}
+import { Directions, PlayerColors } from './constants'
 
 const { RED, YELLOW, STALEMATE } = PlayerColors
 const { NORTH, SOUTH, BOTH } = Directions
@@ -95,7 +83,7 @@ export function getDirection(piece){
 
 }
 
-export function checkFurtherMovesAvailable(pieces, piece){
+export function checkFurtherMovesAvailable(pieces, piece, capturedPieceIndex){
   let furtherMovesAvailable = getListLegalMoves(pieces, piece)
   if(capturedPieceIndex >= 0){
     if(furtherMovesAvailable.length > 0){
@@ -104,20 +92,15 @@ export function checkFurtherMovesAvailable(pieces, piece){
         .filter((posToCheck) => checkIfMoveWasJump(pieces, posToCheck, newPos) >= 0 )
 
       if(jumpMoves.length > 0){
-        return Object.assign({}, state, {
-          canCompleteTurn: true,
-          mustCompleteTurn: false,
-          pieces: pieces
-        })
+        return true
       }
-
     }
   }
+
+  return false
 }
 
 export function getListLegalMoves(pieces, piece){
-
-  console.log(piece)
 
   let direction = getDirection(piece)
   let color = piece.color

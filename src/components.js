@@ -1,6 +1,6 @@
 import React, { Component, PropTypes } from 'react'
 import classNames from 'classnames'
-import {PlayerColors} from './actions'
+import {PlayerColors} from './constants'
 
 const { RED, YELLOW } = PlayerColors
 
@@ -65,7 +65,6 @@ export class BoardRow extends Component {
     );
   }
 }
-
 
 export class GameOver extends Component {
   render(){

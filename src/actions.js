@@ -1,32 +1,18 @@
 import {createAction} from 'redux-actions'
-import {checkLegalMove} from './engine.js'
+import {checkLegalMove} from './engine'
+import {Actions} from './constants'
 
-/*
- * action types
- */
-export const CONNECT_PLAYER = 'CONNECT_PLAYER'
-export const DISCONNECT_PLAYER = 'DISCONNECT_PLAYER'
-export const SET_CURRENT_PLAYER_COLOR = 'SET_CURRENT_PLAYER_COLOR'
-export const SELECT_PIECE = 'SELECT_PIECE'
-export const CLICK_CELL = 'CLICK_CELL'
-export const SET_STATE = 'SET_STATE'
-export const RESET_GAME = 'RESET_GAME'
-export const COMPLETE_TURN = 'COMPLETE_TURN'
-
-/*
- * other constants
- */
-export const PlayerColors = {
-  RED: 'RED',
-  YELLOW: 'YELLOW',
-  STALEMATE: 'STALEMATE'
-}
-
-export const Directions = {
-  NORTH: -1,
-  SOUTH: 1,
-  BOTH: 0
-}
+const {
+  CONNECT_PLAYER,
+  CONNECT_PLAYERS,
+  DISCONNECT_PLAYER,
+  SET_CURRENT_PLAYER_COLOR,
+  SELECT_PIECE,
+  CLICK_CELL,
+  SET_STATE,
+  RESET_GAME,
+  COMPLETE_TURN
+} = Actions
 
 /*
  * action creators
@@ -101,6 +87,7 @@ export const completeTurn = createAction(COMPLETE_TURN, payload => payload, () =
 
 // Server side only
 export const connectPlayer = createAction(CONNECT_PLAYER, payload => payload)
+export const connectPlayers = createAction(CONNECT_PLAYERS, payload => payload)
 export const disconnectPlayer = createAction(DISCONNECT_PLAYER, payload => payload)
 
 // Set state from server to client

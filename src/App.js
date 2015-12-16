@@ -1,11 +1,11 @@
 import React, { Component, PropTypes } from 'react'
 import $ from 'jquery'
 import { connect } from 'react-redux'
-import {BoardCell, BoardRow, Piece, GameOver} from './components'
+import {BoardCell, BoardRow, Piece, GameOver, StartGame} from './components'
+
+import { PlayerColors } from './constants'
 
 import {
-  PlayerColors,
-  VisibilityFilters,
   selectPiece,
   clickCell,
   resetGame,
@@ -39,7 +39,7 @@ class App extends Component{
 
   render() {
 
-    const { dispatch, game, me } = this.props
+    const { dispatch, game, me, players } = this.props
     const { currentPlayerColor, selectedPieceIndex, pieces, gameOver, winner, canCompleteTurn} = game
 
     if(gameOver){
@@ -152,17 +152,6 @@ App.propTypes = {
     'RED',
     'YELLOW'
   ])
-}
-
-function selectTodos(todos, filter) {
-  switch (filter) {
-    case VisibilityFilters.SHOW_ALL:
-      return todos
-    case VisibilityFilters.SHOW_COMPLETED:
-      return todos.filter(todo => todo.completed)
-    case VisibilityFilters.SHOW_ACTIVE:
-      return todos.filter(todo => !todo.completed)
-  }
 }
 
 // Which props do we want to inject, given the global state?

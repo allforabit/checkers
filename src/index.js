@@ -11,7 +11,7 @@ import {setState} from './actions'
 
 import remoteActionMiddleware from './remote-action-middleware'
 
-import App from './App'
+import App from './app'
 import checkersApp from './reducers'
 
 const socket = io()
@@ -31,6 +31,11 @@ const store = finalCreateStore(checkersApp)
 
 socket.on('state', state => {
   store.dispatch(setState(state))
+})
+
+socket.on('disconnect', () => {
+  // Attempt to connect in again
+  socket.connect()
 })
 
 const rootElement = document.getElementById('root')
