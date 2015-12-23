@@ -96,9 +96,9 @@ const game = handleActions({
       pieces = updateItemInArray(pieces, capturedPieceIndex, {captured: true})
     }
 
-    // Check if kinged
-    let kinged = checkPieceKinged(newPos, selectedPiece.color)
-    if(kinged){
+    // Check if king
+    let king = checkPieceKinged(newPos, selectedPiece.color)
+    if(king){
       pieces = updateItemInArray(pieces, selectedPieceIndex, {king: true})
     }
 
@@ -124,7 +124,7 @@ const game = handleActions({
       pieces,
       {
         color: selectedPiece.color,
-        kinged: selectedPiece.kinged,
+        king: king || selectedPiece.king,
         pos: newPos
       },
       capturedPieceIndex
