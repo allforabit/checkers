@@ -8,16 +8,16 @@ export class Piece extends Component{
 
   render() {
 
-    const {piece, currentPlayer, onClick, selected} = this.props
+    const {piece, currentPlayerColor, onClick, selected} = this.props
 
     var classes = classNames({
       'piece': true,
       'bg-red': piece.color === RED && !piece.pending,
       'bg-fuchsia': piece.color === RED && piece.pending,
-      'piece-red--curent': piece.color === RED && currentPlayer === RED,
+      'piece-red--curent': piece.color === RED && currentPlayerColor === RED,
       'bg-yellow': piece.color === YELLOW && !piece.pending,
       'bg-green': piece.color === YELLOW && piece.pending,
-      'piece-yellow--current': piece.color === YELLOW && currentPlayer === YELLOW,
+      'piece-yellow--current': piece.color === YELLOW && currentPlayerColor === YELLOW,
       'piece-selected': selected
     });
 
@@ -43,12 +43,9 @@ export class BoardCell extends Component {
       classes += ' bg-aqua navy';
     }
 
-    var coords = this.props.cell.pos[0] + ',' + this.props.cell.pos[1];
-
     return (
       <td className={classes}  onClick={this.props.onClick} >
         {this.props.children}
-        {coords}
       </td>
     )
 

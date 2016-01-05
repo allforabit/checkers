@@ -59,9 +59,9 @@ class App extends Component{
 
     for (let i = 0; i < cellCount; i++) {
 
-      xPos = 0;
+      xPos = 0
 
-      let boardCells = [];
+      let boardCells = []
 
       // TODO dry up
       if(color === 'white'){
@@ -87,43 +87,57 @@ class App extends Component{
 
         let pieceIndex = pieces.findIndex(p => p.pos && p.pos[0] === xPos
           && p.pos[1] === yPos
-          && p.captured !== true);
+          && p.captured !== true)
 
         let piece = pieces[pieceIndex]
 
         let key = xPos + ':' + yPos
 
-        let isCurrentPieceSelected = pieceIndex === selectedPieceIndex;
+        let isCurrentPieceSelected = pieceIndex === selectedPieceIndex
 
         if(piece){
-          boardCells.push(<BoardCell key={key} cell={cell} ><Piece key={key} piece={piece} selected={isCurrentPieceSelected} onClick={() => dispatch(selectPiece(pieceIndex))} ></Piece></BoardCell>);
+          boardCells.push(<BoardCell key={key} cell={cell} ><Piece key={key} piece={piece} selected={isCurrentPieceSelected} currentPlayerColor={currentPlayerColor} onClick={() => dispatch(selectPiece(pieceIndex))} ></Piece></BoardCell>)
         }else{
-          boardCells.push(<BoardCell key={key} onClick={() => dispatch(clickCell(pos)) } cell={cell} />);
+          boardCells.push(<BoardCell key={key} onClick={() => dispatch(clickCell(pos)) } cell={cell} />)
         }
 
-        xPos++;
+        xPos++
 
       }
 
-      boardRows.push(<BoardRow key={yPos}>{boardCells}</BoardRow>);
+      boardRows.push(<BoardRow key={yPos}>{boardCells}</BoardRow>)
 
-      yPos++;
+      yPos++
 
     }
 
     let completeTurnBtn
 
-    if (canCompleteTurn) {
-      completeTurnBtn = <button className="button mb1 bg-fuchsia" onClick={ () => dispatch(completeTurn()) }>Complete turn</button>;
+    if (canCompleteTurn && currentPlayerColor === me.color) {
+      completeTurnBtn = <button className="button mb1 bg-fuchsia" onClick={ () => dispatch(completeTurn()) }>Complete turn (or click enter)</button>;
     }
 
-    let redCapturedEnemyPiecesCount = pieces
-      .filter(piece => piece.color === YELLOW && piece.captured === true )
+    let redKingCount = pieces
+      .filter(piece => piece.color === RED && piece.king === true)
       .length
 
-    let yellowCapturedEnemyPiecesCount = pieces
+    let redCapturedPiecesCount = pieces
       .filter(piece => piece.color === RED && piece.captured === true )
+      .length - redKingCount
+
+    let yellowKingCount = pieces
+      .filter(piece => piece.color === YELLOW && piece.king === true)
       .length
+
+    let yellowCapturedPiecesCount = pieces
+      .filter(piece => piece.color === YELLOW && piece.captured === true )
+      .length - yellowKingCount
+
+
+    // Reverse rows for red so that the player is playing from the bottom to the top
+    if(me.color === RED){
+      boardRows.reverse()
+    }
 
     return (
       <div >
@@ -133,13 +147,13 @@ class App extends Component{
           {boardRows}
           </tbody>
         </table>
+        {completeTurnBtn}
         <div> I am - {me.color}</div>
         <div> Turn - {currentPlayerColor}</div>
-        {completeTurnBtn}
         <div>
-          <h3>Captured enemy pieces</h3>
-          <div> Red - {redCapturedEnemyPiecesCount}</div>
-          <div> Yellow - {yellowCapturedEnemyPiecesCount}</div>
+          <h3>Captured pieces</h3>
+          <div> Red - {redCapturedPiecesCount}</div>
+          <div> Yellow - {yellowCapturedPiecesCount}</div>
         </div>
       </div>
     )
